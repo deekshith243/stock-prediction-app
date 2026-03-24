@@ -141,20 +141,26 @@ with tab_home:
         with st.spinner(f"Analyzing {ticker}..."):
             df = get_cached_data(ticker, str(datetime.now() - timedelta(days=365)), str(datetime.now().date()))
             if not df.empty:
-                st.plotly_chart(plot_candlestick(df, ticker), use_container_width=True)
+                try:
+                    st.plotly_chart(plot_candlestick(df, ticker), use_container_width=True)
+                except Exception as chart_err:
+                    st.error(f"Chart Error: {chart_err}")
                 
                 # Multi-Stock Comparison Expandable
                 with st.expander("⚖️ Compare with another asset"):
                     comp_ticker = st.text_input("Comparison Ticker", value="MSFT").upper()
-                    df_comp = get_cached_data(comp_ticker, str(datetime.now() - timedelta(days=365)), str(datetime.now().date()))
-                    if not df_comp.empty:
-                        fig_comp = go.Figure()
-                        fig_comp.add_trace(go.Scatter(x=df.index, y=df['Close']/df['Close'].iloc[0], name=ticker))
-                        fig_comp.add_trace(go.Scatter(x=df_comp.index, y=df_comp['Close']/df_comp['Close'].iloc[0], name=comp_ticker))
-                        fig_comp.update_layout(title="Relative Performance (Normalized)", template="plotly_dark")
-                        st.plotly_chart(fig_comp, use_container_width=True)
+                    if comp_ticker and comp_ticker != ticker:
+                        df_comp = get_cached_data(comp_ticker, str(datetime.now() - timedelta(days=365)), str(datetime.now().date()))
+                        if not df_comp.empty:
+                            fig_comp = go.Figure()
+                            fig_comp.add_trace(go.Scatter(x=df.index, y=df['Close']/df['Close'].iloc[0], name=ticker))
+                            fig_comp.add_trace(go.Scatter(x=df_comp.index, y=df_comp['Close']/df_comp['Close'].iloc[0], name=comp_ticker))
+                            fig_comp.update_layout(title="Relative Performance (Normalized)", template="plotly_dark")
+                            st.plotly_chart(fig_comp, use_container_width=True)
+                        else:
+                            st.warning(f"Could not load data for {comp_ticker}")
             else:
-                st.error("Invalid ticker symbol. Please try again.")
+                st.error(f"Ticker '{ticker}' not found or no data available. Please check the symbol.")
 
     with col_sidebar:
         st.subheader("Market Sentiment")
@@ -194,7 +200,10 @@ with tab_predict:
                 fig.add_trace(go.Scatter(x=days_range, y=inv(results['rf_forecast']), name="RandomForest (ML)", line=dict(color='cyan', width=4)))
                 fig.add_trace(go.Scatter(x=days_range, y=results['arima_forecast'], name="ARIMA (Statistical)", line=dict(color='magenta', dash='dash')))
                 fig.update_layout(template="plotly_dark", height=450, legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-                st.plotly_chart(fig, use_container_width=True)
+                try:
+                    st.plotly_chart(fig, use_container_width=True)
+                except Exception as chart_err:
+                    st.error(f"Forecast Chart Error: {chart_err}")
                 
                 # Download CSV
                 forecast_df = pd.DataFrame({"Day": days_range, "RandomForest": inv(results['rf_forecast']), "ARIMA": results['arima_forecast']})
