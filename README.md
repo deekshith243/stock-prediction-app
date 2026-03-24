@@ -5,7 +5,7 @@ GrowthFlow AI is a high-performance, modular stock prediction and portfolio mana
 ## 🚀 Key Features
 
 ### 🤖 Multi-Model AI Predictions
-- **Deep LSTM**: Recurrent Neural Networks for complex pattern recognition.
+- **RandomForest**: High-performance, lightweight ML for pattern recognition.
 - **Facebook Prophet**: Robust additive modeling for trend and seasonality.
 - **ARIMA**: Statistical time-series forecasting with auto-parameter selection.
 - **Linear Regression**: High-speed trend baseline.
@@ -48,7 +48,7 @@ GrowthFlow AI is a high-performance, modular stock prediction and portfolio mana
 - `data/`: Local cache for historical CSV files.
 
 ## 🛡️ Production Optimized
-- **CPU Efficient**: Force-CPU mode for TensorFlow to ensure stability on shared cloud instances.
+- **Lightweight ML**: Zero-dependency on heavy libraries like TensorFlow.
 - **Fast Loading**: Integrated Streamlit caching (`@st.cache_data`, `@st.cache_resource`).
 - **Robust**: Comprehensive error handling for tickers and API failures.
 

@@ -17,7 +17,7 @@ from utils.portfolio import calculate_portfolio_performance, plot_allocation_cha
 from utils.alerts import show_alert_ui
 
 # Import models
-from models.lstm_model import train_and_predict, forecast_future
+from models.rf_model import train_rf_model, forecast_future_rf
 from models.linear_regression import train_linear_regression, forecast_future_lr
 from models.arima_model import train_arima
 from models.prophet_model import train_prophet
@@ -61,9 +61,9 @@ def get_ml_results(df, seq_length):
         X, y = create_sequences(data_scaled, seq_length)
         X_train, y_train, X_test, y_test = split_data(X, y)
         
-        # Train LSTM (CPU Optimized)
-        lstm_preds, lstm_model = train_and_predict(X_train, y_train, X_test)
-        lstm_forecast = forecast_future(lstm_model, X_test[-1], days=7)
+        # Train RandomForest (Lightweight Alternative to LSTM)
+        rf_preds, rf_model = train_rf_model(X_train, y_train, X_test)
+        rf_forecast = forecast_future_rf(rf_model, X_test[-1], days=7)
         
         # Train LR
         lr_preds, lr_model = train_linear_regression(X_train, y_train, X_test)
@@ -77,7 +77,7 @@ def get_ml_results(df, seq_length):
         
         return {
             "y_test": y_test,
-            "lstm_preds": lstm_preds, "lstm_forecast": lstm_forecast,
+            "rf_preds": rf_preds, "rf_forecast": rf_forecast,
             "lr_preds": lr_preds, "lr_forecast": lr_forecast,
             "arima_forecast": arima_forecast,
             "prophet_forecast": prophet_forecast,
@@ -147,7 +147,7 @@ elif page == "🔮 AI Predictions":
         days_range = [f"Day{i+1}" for i in range(7)]
         
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=days_range, y=inv(results['lstm_forecast']), name="LSTM (Deep Learning)", line=dict(color='cyan')))
+        fig.add_trace(go.Scatter(x=days_range, y=inv(results['rf_forecast']), name="RandomForest (ML)", line=dict(color='cyan')))
         fig.add_trace(go.Scatter(x=days_range, y=results['prophet_forecast'], name="Prophet (Statistical)", line=dict(color='orange')))
         fig.add_trace(go.Scatter(x=days_range, y=results['arima_forecast'], name="ARIMA", line=dict(color='magenta')))
         fig.update_layout(template="plotly_dark", height=500)
@@ -155,7 +155,7 @@ elif page == "🔮 AI Predictions":
         
         st.subheader("Model Evaluation")
         metrics_df = compare_models({
-            "LSTM": (results['y_test'], results['lstm_preds']),
+            "RandomForest": (results['y_test'], results['rf_preds']),
             "Linear Regression": (results['y_test'], results['lr_preds'])
         })
         st.table(metrics_df)

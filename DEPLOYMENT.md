@@ -27,9 +27,8 @@ Ensure your repo contains:
 ### 4. Post-Deployment Verification
 - Navigate to the **"AI Predictions"** tab.
 - Enter a common ticker like `AAPL` or `TSLA`.
-- Verify that the models train (spinners appear) and the forecast chart displays.
+- Verify that the models train (spinners appear instantly) and the forecast chart displays.
 
 ### 5. Troubleshooting
 - **ModuleNotFoundError**: Ensure the module is listed in `requirements.txt`.
-- **Resource Limits**: If the app restarts often, reduce the `seq_length` or date range in the sidebar.
-- **Prophet Installation**: If Prophet fails, ensure `pystan` or `holidays` versions are compatible (automatically handled by our pinned requirements).
+- **Resource Limits**: The app is now extremely lightweight. If it restarts, check your internet connection or the yfinance API status.
