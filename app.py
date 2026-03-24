@@ -207,9 +207,10 @@ with tab_predict:
                 <div class="fintech-card">
                     <p>Model Confidence</p>
                     <h2 style='color: #00ffcc;'>{confidence}%</h2>
-                    <p><small>Based on 30-day backtesting variance</small></p>
                 </div>
                 """, unsafe_allow_html=True)
+                st.progress(confidence/100)
+                st.write("<small>Based on 30-day backtesting variance</small>", unsafe_allow_html=True)
                 
                 st.write("### Evaluation Tags")
                 st.table(compare_models({"RF": (results['y_test'], results['rf_preds']), "LR": (results['y_test'], results['lr_preds'])}))
