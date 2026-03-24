@@ -20,7 +20,6 @@ from utils.alerts import show_alert_ui
 from models.rf_model import train_rf_model, forecast_future_rf
 from models.linear_regression import train_linear_regression, forecast_future_lr
 from models.arima_model import train_arima
-from models.prophet_model import train_prophet
 
 # --- Page Config ---
 st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
@@ -69,18 +68,14 @@ def get_ml_results(df, seq_length):
         lr_preds, lr_model = train_linear_regression(X_train, y_train, X_test)
         lr_forecast = forecast_future_lr(lr_model, X_test[-1], days=7)
         
-        # ARIMA
+        # ARIMA (Statsmodels)
         arima_forecast, _ = train_arima(df['Close'].values, forecast_days=7)
-        
-        # Prophet
-        prophet_forecast, _, _ = train_prophet(df, forecast_days=7)
         
         return {
             "y_test": y_test,
             "rf_preds": rf_preds, "rf_forecast": rf_forecast,
             "lr_preds": lr_preds, "lr_forecast": lr_forecast,
             "arima_forecast": arima_forecast,
-            "prophet_forecast": prophet_forecast,
             "scaler": scaler,
             "success": True
         }
@@ -104,7 +99,7 @@ if page == "📊 Dashboard Home":
     with col2:
         st.subheader("AI Performance Summary")
         st.info("Current average model accuracy across top 10 tickers: **94.2%** (Simulated)")
-        st.write("Our Deep LSTM and Prophet models are currently providing high-confidence signals for volatile tech stocks.")
+        st.write("Our Lightweight RandomForest and ARIMA models provide high-speed, reliable signals for 3.14+ environments.")
 
 # --- PAGE: Market Analysis ---
 elif page == "📈 Market Analysis":
@@ -148,8 +143,8 @@ elif page == "🔮 AI Predictions":
         
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=days_range, y=inv(results['rf_forecast']), name="RandomForest (ML)", line=dict(color='cyan')))
-        fig.add_trace(go.Scatter(x=days_range, y=results['prophet_forecast'], name="Prophet (Statistical)", line=dict(color='orange')))
-        fig.add_trace(go.Scatter(x=days_range, y=results['arima_forecast'], name="ARIMA", line=dict(color='magenta')))
+        fig.add_trace(go.Scatter(x=days_range, y=results['arima_forecast'], name="ARIMA (Statistical)", line=dict(color='magenta')))
+        fig.add_trace(go.Scatter(x=days_range, y=inv(results['lr_forecast']), name="Linear Regression", line=dict(color='white')))
         fig.update_layout(template="plotly_dark", height=500)
         st.plotly_chart(fig, use_container_width=True)
         
