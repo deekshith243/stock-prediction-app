@@ -72,6 +72,47 @@ if 'portfolio' not in st.session_state:
 if 'watchlist' not in st.session_state:
     st.session_state.watchlist = ["AAPL", "TSLA", "BTC-USD"]
 
+# --- Helper Functions (with Caching) ---
+@st.cache_data
+def get_cached_data(ticker, start, end):
+    try:
+        df = fetch_stock_data(ticker, start, end)
+        if df is not None and not df.empty:
+            return handle_missing_values(df)
+        return pd.DataFrame()
+    except Exception as e:
+        print(f"Error fetching {ticker}: {e}")
+        return pd.DataFrame()
+
+@st.cache_resource
+def get_ml_results(df, seq_length, n_days=7):
+    try:
+        data_scaled, scaler = scale_features(df[['Close']].values)
+        X, y = create_sequences(data_scaled, seq_length)
+        X_train, y_train, X_test, y_test = split_data(X, y)
+        
+        # Models
+        rf_preds, rf_model = train_rf_model(X_train, y_train, X_test)
+        rf_forecast = forecast_future_rf(rf_model, X_test[-1], days=n_days)
+        
+        lr_preds, lr_model = train_linear_regression(X_train, y_train, X_test)
+        lr_forecast = forecast_future_lr(lr_model, X_test[-1], days=n_days)
+        
+        arima_forecast, arima_conf_int = train_arima(df['Close'].values, forecast_days=n_days)
+        
+        return {
+            "y_test": y_test,
+            "rf_preds": rf_preds, "rf_forecast": rf_forecast,
+            "lr_preds": lr_preds, "lr_forecast": lr_forecast,
+            "arima_forecast": arima_forecast,
+            "arima_conf_int": arima_conf_int,
+            "scaler": scaler,
+            "success": True
+        }
+    except Exception as e:
+        print(f"ML Processing Error: {e}")
+        return {"success": False}
+
 # --- Tabbed Navigation ---
 tab_dashboard, tab_analysis, tab_prediction, tab_portfolio = st.tabs(["📊 Dashboard", "🔍 Analysis", "🔮 Prediction", "💼 Portfolio"])
 
@@ -83,19 +124,25 @@ with st.sidebar:
             w_col1, w_col2, w_col3 = st.columns([2, 2, 1])
             w_col1.markdown(f"**{w_ticker}**")
             
-            # Fetch mini-data for watchlist
+            # Fetch mini-data for watchlist (use 7 days for better reliability)
             try:
-                w_df = get_cached_data(w_ticker, (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
-                if not w_df.empty:
+                start_w = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+                end_w = datetime.now().strftime('%Y-%m-%d')
+                w_df = get_cached_data(w_ticker, start_w, end_w)
+                
+                if not w_df.empty and len(w_df) >= 2:
                     w_last = w_df['Close'].iloc[-1]
                     w_prev = w_df['Close'].iloc[-2]
                     w_change = ((w_last - w_prev) / w_prev) * 100
                     w_color = "green" if w_change >= 0 else "red"
                     w_col2.markdown(f"**${w_last:.2f}** <span style='color:{w_color}; font-size:0.8em;'>({w_change:+.2f}%)</span>", unsafe_allow_html=True)
+                elif not w_df.empty:
+                    w_col2.markdown(f"**${w_df['Close'].iloc[-1]:.2f}**")
                 else:
-                    w_col2.write("N/A")
-            except:
-                w_col2.write("Error")
+                    w_col2.write("<small>No Data</small>", unsafe_allow_html=True)
+            except Exception as e:
+                print(f"Watchlist error for {w_ticker}: {e}")
+                w_col2.write("<small>Service Error</small>", unsafe_allow_html=True)
                 
             if w_col3.button("🗑️", key=f"del_{w_ticker}"):
                 st.session_state.watchlist.remove(w_ticker)
