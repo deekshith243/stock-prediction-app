@@ -398,8 +398,6 @@ with tab_dashboard:
                 
             except Exception as e:
                 st.error(f"Recommendation Analytics Error: {e}")
-eption as e:
-                st.error(f"Recommendation Error: {e}")
 
 # --- TAB: Analysis ---
 with tab_analysis:
