@@ -29,124 +29,12 @@ except ImportError:
 from utils.risk_tools import calculate_risk_price_points
 
 # --- Page Config ---
-st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="GrowthFlow AI", layout="wide")
 
-# --- Custom Styles (Institutional Trading Terminal V2) ---
-st.markdown("""
-    <style>
-    /* Global Reset & High Contrast */
-    .main { 
-        background-color: #0f172a !important; 
-        color: #e2e8f0 !important; 
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    
-    /* Institutional Metrics */
-    div[data-testid="stMetricValue"] { 
-        color: #ffffff !important; 
-        font-weight: 800 !important; 
-        font-size: 2.4rem !important;
-        text-shadow: 0 4px 8px rgba(0,0,0,0.4);
-    }
-    div[data-testid="stMetricLabel"] { 
-        color: #94a3b8 !important; 
-        font-weight: 700 !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    /* V2 Solid Card System */
-    .fintech-card {
-        background-color: #1e293b !important;
-        padding: 30px;
-        border-radius: 12px;
-        border: 2px solid #334155;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
-        opacity: 1 !important;
-    }
-    .fintech-card:hover { 
-        border-color: #475569; 
-    }
-    
-    /* Typography & Headers */
-    h1, h2, h3 { 
-        color: #ffffff !important; 
-        font-weight: 900 !important; 
-        letter-spacing: -0.025em !important;
-        margin-bottom: 1.5rem !important;
-    }
-    p, span, li, b { 
-        color: #e2e8f0 !important; 
-        opacity: 1 !important;
-        font-weight: 500;
-    }
-    .secondary-text {
-        color: #94a3b8 !important;
-        font-size: 0.9em;
-    }
-    
-    /* Institutional Buttons */
-    .stButton>button { 
-        width: 100%; 
-        border-radius: 8px; 
-        background: #2563eb !important;
-        color: #ffffff !important;
-        height: 3.5em;
-        border: none;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .stButton>button:hover { 
-        background-color: #1d4ed8 !important;
-        box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
-        transform: translateY(-2px);
-    }
-    
-    /* Tabs & High-Contrast Navigation */
-    .stTabs [data-baseweb="tab-list"] { 
-        background-color: #1e293b; 
-        padding: 8px;
-        border-radius: 12px;
-        border: 2px solid #334155;
-        gap: 15px;
-    }
-    .stTabs [data-baseweb="tab"] { 
-        color: #94a3b8 !important; 
-        font-weight: 800 !important;
-        padding: 12px 24px !important;
-        border-radius: 8px !important;
-        transition: all 0.2s;
-    }
-    .stTabs [aria-selected="true"] { 
-        color: #ffffff !important; 
-        background-color: #334155 !important;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-    }
-    
-    /* Sidebar Institutional Pulse */
-    [data-testid="stSidebar"] {
-        background-color: #0f172a !important;
-        border-right: 2px solid #1e293b;
-    }
-    [data-testid="stSidebar"] h1 { font-size: 1.8em !important; }
-    [data-testid="stSidebar"] p { font-size: 0.95em !important; color: #94a3b8 !important; }
-
-    /* Dataframes & Tables */
-    .stDataFrame {
-        border: 2px solid #334155 !important;
-        border-radius: 12px !important;
-        overflow: hidden !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- Sidebar Branding & High Contrast Watchlist ---
-st.sidebar.markdown("# 📈 GrowthFlow AI")
-st.sidebar.markdown("<p style='color: #94a3b8; font-weight: 600; font-size: 1.1em;'>Elite Predictive Analytics</p>", unsafe_allow_html=True)
-st.sidebar.markdown("---")
+# --- Sidebar Branding ---
+st.sidebar.title("📈 GrowthFlow AI")
+st.sidebar.markdown("Stock Prediction & Analytics")
+st.sidebar.divider()
 
 # --- Initialize Session State ---
 if 'portfolio' not in st.session_state:
@@ -286,8 +174,8 @@ if st.sidebar.button("📊 Generate Institutional Report"):
 with tab_dashboard:
     st.title("Elite Market Terminal")
     
-    # Elite Heatmap Section
-    with st.expander("📊 Elite Market Heatmap", expanded=True):
+    # Market Heatmap Section
+    with st.expander("📊 Market Watch", expanded=True):
         h_cols = st.columns(len(st.session_state.watchlist) if st.session_state.watchlist else 1)
         for idx, w_ticker in enumerate(st.session_state.watchlist):
             try:
@@ -295,17 +183,10 @@ with tab_dashboard:
                 if not h_df.empty:
                     h_val = h_df['Close'].iloc[-1]
                     h_change = ((h_val - h_df['Close'].iloc[-2]) / h_df['Close'].iloc[-2]) * 100
-                    h_color = "#00ffcc" if h_change >= 0 else "#ff4b4b"
-                    h_cols[idx % 5].markdown(f"""
-                    <div style="background: {h_color}22; border: 1px solid {h_color}; padding: 15px; border-radius: 8px; text-align: center;">
-                        <small>{w_ticker}</small><br>
-                        <b style="color: {h_color}; font-size: 1.2em;">{h_change:+.2f}%</b><br>
-                        <small>${h_val:.2f}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    h_cols[idx % 5].metric(w_ticker, f"${h_val:.2f}", f"{h_change:+.2f}%")
             except: pass
 
-    st.markdown("---")
+    st.divider()
     
     # Quick Summary Metrics
     c1, c2, c3, c4 = st.columns(4)
@@ -354,124 +235,62 @@ with tab_dashboard:
             sentiment = get_sentiment(ticker)
             sentiment_conf = abs(sentiment['score']) * 100 if sentiment['score'] != 0 else 50
             
-            # 1. Sentiment Card
-            st.markdown(f"""
-            <div class="fintech-card">
-                <h3 style="color: #ffffff; margin-bottom: 12px; font-size: 1.2em;">🎭 Market Sentiment</h3>
-                <div style="display: flex; justify-content: space-between; align-items: center; background: #334155; padding: 12px; border-radius: 8px;">
-                    <span style="font-size: 1.3em; font-weight: 800; color: {'#22c55e' if sentiment['label'] == 'Positive' else '#ef4444' if sentiment['label'] == 'Negative' else '#facc15'};">{sentiment['label']}</span>
-                    <span style="color: #cbd5f5; font-weight: 700;">{sentiment_conf:.1f}% CONFIDENCE</span>
-                </div>
-                <p style="margin-top: 15px; color: #cbd5f5 !important; line-height: 1.5;">"{sentiment['snippet']}"</p>
-            </div>
-            """, unsafe_allow_html=True)
+            # 1. Sentiment & Recommendation
+            st.subheader("Market Analysis")
+            sc1, sc2 = st.columns(2)
+            sc1.metric("Sentiment", sentiment['label'], f"{sentiment_conf:.1f}% Conf")
+            sc1.info(f"Snippet: {sentiment['snippet']}")
             
             # Smart Recommendation Prep
             last_price = df['Close'].iloc[-1]
             try:
                 results_temp = get_ml_results(df, 60, n_days=1)
                 next_pred = results_temp['rf_forecast'][0] if results_temp.get('success') else last_price * 1.01
-                
                 df_rec = add_indicators(df)
                 latest_rec = df_rec.iloc[-1]
                 interpretations = get_indicator_interpretation(df_rec)
-                
-                rec = get_recommendation(
-                    last_price, next_pred, latest_rec['RSI'], sentiment, 
-                    latest_rec['MACD'], latest_rec['MACD_Signal'], 
-                    latest_rec['BB_Upper'], latest_rec['BB_Lower']
-                )
-                
+                rec = get_recommendation(last_price, next_pred, latest_rec['RSI'], sentiment, latest_rec['MACD'], latest_rec['MACD_Signal'], latest_rec['BB_Upper'], latest_rec['BB_Lower'])
                 risk_pts = calculate_risk_price_points(last_price, df, direction=rec['action'])
-                rec_icon = "🚀" if "BUY" in rec['action'] else "📉" if "SELL" in rec['action'] else "⚖️"
                 
-                # 2. Recommendation Card
-                rec_color = '#22c55e' if "BUY" in rec['action'] else '#ef4444' if "SELL" in rec['action'] else '#facc15'
-                st.markdown(f"""
-                <div class="fintech-card" style="border-left: 8px solid {rec_color}; background-color: #1e293b;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                        <div>
-                            <small style="color: #94a3b8; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">ELITE SIGNAL</small>
-                            <h1 style="color: {rec_color}; margin: 5px 0 0 0; font-size: 2.8em; line-height: 1;">{rec_icon} {rec['action']}</h1>
-                        </div>
-                        <div style="background: {rec_color}; color: #000; padding: 8px 16px; border-radius: 6px; font-weight: 900; font-size: 1em;">
-                            {rec['strength']}% STRENGTH
-                        </div>
-                    </div>
-                    
-                    <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
-                        <p style="margin: 0; font-size: 1.1em; color: #ffffff !important; font-weight: 500;">{rec['explanation']}</p>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div style="background: #ef444422; border: 1px solid #ef4444; padding: 15px; border-radius: 8px; text-align: center;">
-                            <small style="color: #ef4444; font-weight: 800; text-transform: uppercase;">🛑 STOP LOSS</small><br>
-                            <span style="font-size: 1.6em; font-weight: 900; color: #ffffff !important;">${risk_pts['stop_loss']}</span>
-                        </div>
-                        <div style="background: #22c55e22; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; text-align: center;">
-                            <small style="color: #22c55e; font-weight: 800; text-transform: uppercase;">🎯 TARGET</small><br>
-                            <span style="font-size: 1.6em; font-weight: 900; color: #ffffff !important;">${risk_pts['target_profit']}</span>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                sc2.metric("Signal", rec['action'], f"{rec['strength']}% Strength")
+                if "BUY" in rec['action']:
+                    st.success(f"**Recommendation**: {rec['explanation']}")
+                elif "SELL" in rec['action']:
+                    st.error(f"**Recommendation**: {rec['explanation']}")
+                else:
+                    st.warning(f"**Recommendation**: {rec['explanation']}")
+
+                st.divider()
                 
-                # 3. Multi-Timeframe Pulse
-                t1d = interpretations.get('Trend_1D', 'N/A')
-                t1w = interpretations.get('Trend_1W', 'N/A')
-                t1m = interpretations.get('Trend_1M', 'N/A')
-                c1d = '#22c55e' if t1d == 'Uptrend' else '#ef4444'
-                c1w = '#22c55e' if t1w == 'Uptrend' else '#ef4444'
-                c1m = '#22c55e' if t1m in ['Bullish', 'Uptrend'] else '#ef4444'
+                # 2. Risk Points
+                st.subheader("Plan Your Trade")
+                k1, k2 = st.columns(2)
+                k1.metric("Stop Loss", f"${risk_pts['stop_loss']}")
+                k2.metric("Target Profit", f"${risk_pts['target_profit']}")
                 
-                st.markdown(f"""
-                <div class="fintech-card">
-                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 20px;">🔍 Institutional Trend Pulse</h3>
-                    <div style="display: flex; gap: 12px; justify-content: space-between;">
-                        <div style="flex: 1; text-align: center; padding: 15px; border-radius: 8px; background: #0f172a; border: 2px solid {c1d};">
-                            <small style="color: #cbd5f5; font-weight: 800;">DAILY</small><br>
-                            <b style="color: {c1d}; font-size: 1.22em; font-weight: 900;">{t1d.upper()}</b>
-                        </div>
-                        <div style="flex: 1; text-align: center; padding: 15px; border-radius: 8px; background: #0f172a; border: 2px solid {c1w};">
-                            <small style="color: #cbd5f5; font-weight: 800;">WEEKLY</small><br>
-                            <b style="color: {c1w}; font-size: 1.22em; font-weight: 900;">{t1w.upper()}</b>
-                        </div>
-                        <div style="flex: 1; text-align: center; padding: 15px; border-radius: 8px; background: #0f172a; border: 2px solid {c1m};">
-                            <small style="color: #cbd5f5; font-weight: 800;">MONTHLY</small><br>
-                            <b style="color: {c1m}; font-size: 1.22em; font-weight: 900;">{t1m.upper()}</b>
-                        </div>
-                    </div>
-                </div>
-                <div class="fintech-card">
-                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 12px;">🧠 AI Predictive Rationalization</h3>
-                    <p style="color: #cbd5f5 !important; font-size: 1em;">Drivers for the current {n_days}-day institutional forecast for <b>{ticker}</b>:</p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.divider()
                 
-                # 4. XAI Chart
+                # 3. Market Pulse
+                st.subheader("Trend Status")
+                p1, p2, p3 = st.columns(3)
+                p1.metric("Daily", interpretations.get('Trend_1D', 'N/A'))
+                p2.metric("Weekly", interpretations.get('Trend_1W', 'N/A'))
+                p3.metric("Monthly", interpretations.get('Trend_1M', 'N/A'))
+                
+                st.divider()
+                
+                # 4. News & AI Insights
+                st.subheader("AI Insights & News")
                 res_xai = get_ml_results(df, 60, n_days=1)
                 xai_model = res_xai.get('rf_model')
                 if xai_model and get_rf_feature_importance:
                     xai_df = get_rf_feature_importance(xai_model)
                     if xai_df is not None and not xai_df.empty:
-                        fig_xai = px.bar(xai_df.head(5), x='importance', y='feature', orientation='h', template="plotly_dark")
-                        fig_xai.update_traces(marker_color='cyan')
-                        fig_xai.update_layout(height=200, margin=dict(l=0, r=0, t=0, b=0), xaxis_title="Weight", yaxis_title="")
+                        fig_xai = px.bar(xai_df.head(5), x='importance', y='feature', orientation='h')
+                        fig_xai.update_layout(height=250, title="Prediction Drivers")
                         st.plotly_chart(fig_xai, use_container_width=True)
-                    else:
-                        st.info("Performance factors currently updating...")
-                else:
-                    st.info("AI Explanation engine initializing...")
-
-                # 5. Elite News Feed
-                st.markdown(f"""
-                <div class="fintech-card">
-                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 12px;">📰 Institutional News Intelligence</h3>
-                    <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
-                        <p style="margin: 0;"><b>OUTLOOK:</b> <span style="color: {'#22c55e' if sentiment['label'] == 'Positive' else '#ef4444' if sentiment['label'] == 'Negative' else '#facc15'}; font-weight: 800;">{sentiment['label'].upper()}</span></p>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                
+                st.info(f"**News Sentiment Outlook**: {sentiment['label']}")
                 
                 with st.expander("View Latest Headlines"):
                     for news_item in sentiment.get('headlines', []):
@@ -565,20 +384,12 @@ with tab_prediction:
                 with col_metrics:
                     st.subheader("Asset Risk Profile")
                     risk_m = get_risk_assessment_metrics(p_df)
-                    st.markdown(f"""
-                    <div class="fintech-card" style="border-right: 8px solid #22c55e;">
-                        <small style="color: #94a3b8; font-weight: 800;">SHARPE RATIO</small>
-                        <h1 style='color: #22c55e; margin: 10px 0; font-size: 2.8em;'>{risk_m.get('sharpe_ratio', 0):.2f}</h1>
-                        <p style="color: #e2e8f0 !important; font-weight: 600;">EQUITY PERFORMANCE</p>
-                    </div>
-                    <div class="fintech-card" style="border-right: 8px solid #ef4444;">
-                        <small style="color: #94a3b8; font-weight: 800;">MAX DRAWDOWN</small>
-                        <h1 style='color: #ef4444; margin: 10px 0; font-size: 2.8em;'>{risk_m.get('max_drawdown', 0):.2%}</h1>
-                        <p style="color: #e2e8f0 !important; font-weight: 600;">VOLATILITY RISK</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.metric("Sharpe Ratio", f"{risk_m.get('sharpe_ratio', 0):.2f}")
+                    st.metric("Max Drawdown", f"{risk_m.get('max_drawdown', 0):.2%}")
+                    
+                    st.divider()
                     from utils.evaluator import compare_models
-                    st.write("### Cross-Validation")
+                    st.write("### Model Performance")
                     st.table(compare_models({"RF": (results['y_test'], results['rf_preds']), "LR": (results['y_test'], results['lr_preds'])}))
         else:
             st.warning("Enter a valid ticker to start forecasting.")
@@ -603,8 +414,7 @@ with tab_strategy:
             # Equity Curve Chart
             try:
                 df_bt = pd.DataFrame({"Equity": bt_results.get('equity_curve', [10000])}, index=s_df.index)
-                fig_bt = px.line(df_bt, y="Equity", title=f"Equity Growth Simulation: {s_ticker}", template="plotly_dark")
-                fig_bt.update_traces(line_color="cyan", line_width=3)
+                fig_bt = px.line(df_bt, y="Equity", title=f"Equity Growth Simulation: {s_ticker}")
                 st.plotly_chart(fig_bt, use_container_width=True)
             except Exception as e:
                 st.error(f"Strategy Chart Error: {e}")
@@ -632,29 +442,18 @@ with tab_portfolio:
         # Portfolio AI Advisor Integration
         try:
             advisor = analyze_portfolio(st.session_state.portfolio)
-            status = advisor.get("status", "").lower()
-            if status == "optimized":
-                adv_color = "#22c55e"
-            elif status == "balanced":
-                adv_color = "#facc15"
+            st.metric("AI Advisor Status", advisor.get('status', 'N/A').upper())
+            if advisor.get('status') == 'Optimized':
+                st.success("Your portfolio is currently optimized.")
             else:
-                adv_color = "#ef4444"
-                
-            st.markdown(f"""
-            <div class="fintech-card" style="text-align: center; border: 2px solid {adv_color}; background: #0f172a; padding: 40px !important;">
-                <small style="color: #94a3b8; font-weight: 800; letter-spacing: 2px;">ELITE ADVISOR STATUS</small><br>
-                <h1 style="color: {adv_color}; margin: 15px 0; font-size: 3.5em; font-weight: 900; letter-spacing: -2px;">{advisor.get('status', 'N/A').upper()}</h1>
-                <p style="color: #e2e8f0; font-weight: 600;">ACTIVE PORTFOLIO OPTIMIZATION: ON</p>
-            </div>
-            """, unsafe_allow_html=True)
+                st.info("Portfolio adjustments suggested.")
             
-            # Portfolio AI Advisor Alerts
+            # AI Advisor Alerts
             if advisor.get('warnings'):
-                with st.expander("🤖 AI Portfolio Advisor Alert", expanded=True):
-                    for warn in advisor.get('warnings', []):
-                        st.warning(warn)
-                    for sug in advisor.get('suggestions', []):
-                        st.info(f"💡 Suggestion: {sug}")
+                for warn in advisor.get('warnings', []):
+                    st.warning(warn)
+                for sug in advisor.get('suggestions', []):
+                    st.info(f"💡 Suggestion: {sug}")
         except Exception as e:
             st.error(f"AI Advisor Module Error: {e}")
         
