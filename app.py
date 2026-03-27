@@ -22,7 +22,10 @@ from utils.backtester import backtest_strategy
 from utils.portfolio_advisor import analyze_portfolio, detect_market_regime
 
 # Elite Features Imports
-from models.rf_model import get_rf_feature_importance
+try:
+    from models.rf_model import get_rf_feature_importance
+except ImportError:
+    get_rf_feature_importance = None
 from utils.risk_tools import calculate_risk_price_points
 
 # --- Page Config ---
@@ -377,12 +380,17 @@ with tab_dashboard:
                 # 4. XAI Chart
                 res_xai = get_ml_results(df, 60, n_days=1)
                 xai_model = res_xai.get('rf_model')
-                if xai_model:
-                    xai_data = get_rf_feature_importance(xai_model)
-                    fig_xai = px.bar(x=list(xai_data.values()), y=list(xai_data.keys()), orientation='h', template="plotly_dark")
-                    fig_xai.update_traces(marker_color='cyan')
-                    fig_xai.update_layout(height=200, margin=dict(l=0, r=0, t=0, b=0), xaxis_title="Weight", yaxis_title="")
-                    st.plotly_chart(fig_xai, use_container_width=True)
+                if xai_model and get_rf_feature_importance:
+                    xai_df = get_rf_feature_importance(xai_model)
+                    if xai_df is not None and not xai_df.empty:
+                        fig_xai = px.bar(xai_df.head(5), x='importance', y='feature', orientation='h', template="plotly_dark")
+                        fig_xai.update_traces(marker_color='cyan')
+                        fig_xai.update_layout(height=200, margin=dict(l=0, r=0, t=0, b=0), xaxis_title="Weight", yaxis_title="")
+                        st.plotly_chart(fig_xai, use_container_width=True)
+                    else:
+                        st.info("Performance factors currently updating...")
+                else:
+                    st.info("AI Explanation engine initializing...")
 
                 # 5. News Sentiment Card
                 st.markdown(f"""

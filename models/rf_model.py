@@ -43,14 +43,27 @@ def forecast_future_rf(model, last_sequence, days=7):
         
     return np.array(future_preds)
 
-def get_rf_feature_importance(model):
+def get_rf_feature_importance(model, feature_names=None):
     """
     Returns the feature importance from the trained RF model.
     """
-    if hasattr(model, 'feature_importances_'):
-        importances = model.feature_importances_
-        # Standard labels for our sequence-based model
-        labels = ["Price Momentum", "Recent Trend", "Volatility Factor", "Volume Intensity", "Sentiment Weight"]
-        # Map top features
-        return dict(zip(labels, importances[:5]))
-    return {}
+    try:
+        import pandas as pd
+        if hasattr(model, 'feature_importances_'):
+            importance = model.feature_importances_
+            # Use provided names or default labels
+            if feature_names is None:
+                feature_names = ["Price Momentum", "Recent Trend", "Volatility Factor", "Volume Intensity", "Sentiment Weight"]
+                # Adjust length to match importances
+                if len(importance) > len(feature_names):
+                    feature_names += [f"Feature {i}" for i in range(len(feature_names), len(importance))]
+                feature_names = feature_names[:len(importance)]
+            
+            df = pd.DataFrame({
+                "feature": feature_names,
+                "importance": importance
+            }).sort_values(by="importance", ascending=False)
+            return df
+        return None
+    except Exception:
+        return None
