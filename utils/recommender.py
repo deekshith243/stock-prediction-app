@@ -86,10 +86,15 @@ def get_recommendation(last_price, next_day_pred, rsi, sentiment, macd=0, macd_s
     ideal_buy = last_price * 0.985 if bb_lower == 0 else max(bb_lower, last_price * 0.98)
     ideal_sell = last_price * 1.05 if bb_upper == 0 else min(bb_upper, last_price * 1.06)
 
+    # Signal Strength Calculation (0-100%)
+    # Max theoretical score is around 7, let's use 6 as 100% reference
+    strength = min(100, int((abs(score) / 6.0) * 100))
+
     return {
         "action": recommendation,
         "color": color,
         "score": score,
+        "strength": strength,
         "signals": signals,
         "explanation": explanation,
         "entry": round(ideal_buy, 2),

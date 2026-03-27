@@ -59,21 +59,23 @@ def get_indicator_interpretation(df: pd.DataFrame):
     elif price < latest['BB_Lower']: interpretations['BB'] = "Below Lower Band (Undervalued)"
     else: interpretations['BB'] = "Within Range"
 
-    # Moving Averages Trend
-    trend_status = "Sideways"
-    if not np.isnan(latest['MA50']) and not np.isnan(latest['MA200']):
-        if price > latest['MA50'] > latest['MA200']:
-            trend_status = "Uptrend (Strong Bullish)"
-        elif price < latest['MA50'] < latest['MA200']:
-            trend_status = "Downtrend (Strong Bearish)"
-        else:
-            trend_status = "Sideways / Consolidation"
+    # Multi-Timeframe Trends
+    # 1-Day: Price vs MA5 (Short-term)
+    ma5 = df['Close'].rolling(window=5).mean().iloc[-1]
+    interpretations['Trend_1D'] = "Uptrend" if price > ma5 else "Downtrend"
     
-    interpretations['Trend'] = trend_status
+    # 1-Week: Price vs MA20 (Mid-term)
+    ma20 = df['Close'].rolling(window=20).mean().iloc[-1]
+    interpretations['Trend_1W'] = "Uptrend" if price > ma20 else "Downtrend"
     
+    # 1-Month: Price vs MA60 (Long-term)
+    ma60 = df['Close'].rolling(window=60).mean().iloc[-1]
+    interpretations['Trend_1M'] = "Bullish" if price > ma60 else "Bearish"
+
     # Volatility Risk Score
     returns = df['Close'].pct_change().dropna()
-    volatility = returns.std() * np.sqrt(252) # Annualized Volatility
+    volatility = returns.std() * np.sqrt(252) 
+    
     if volatility < 0.15: risk = "Low"
     elif volatility < 0.30: risk = "Medium"
     else: risk = "High"

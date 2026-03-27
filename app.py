@@ -17,6 +17,11 @@ from utils.indicators import add_indicators, get_indicator_interpretation
 from utils.recommender import get_recommendation
 from utils.alerts import show_alert_ui, check_alerts
 
+# Pro Analytics Imports
+from utils.risk_metrics import get_risk_assessment_metrics
+from utils.backtester import backtest_strategy
+from utils.portfolio_advisor import analyze_portfolio, detect_market_regime
+
 # --- Page Config ---
 st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
 
@@ -71,6 +76,8 @@ if 'portfolio' not in st.session_state:
     st.session_state.portfolio = {"AAPL": {"qty": 10, "avg_price": 150.0}, "TSLA": {"qty": 5, "avg_price": 200.0}}
 if 'watchlist' not in st.session_state:
     st.session_state.watchlist = ["AAPL", "TSLA", "BTC-USD"]
+if 'trade_history' not in st.session_state:
+    st.session_state.trade_history = []
 
 # --- Helper Functions (with Caching) ---
 @st.cache_data
@@ -114,7 +121,9 @@ def get_ml_results(df, seq_length, n_days=7):
         return {"success": False}
 
 # --- Tabbed Navigation ---
-tab_dashboard, tab_analysis, tab_prediction, tab_portfolio = st.tabs(["📊 Dashboard", "🔍 Analysis", "🔮 Prediction", "💼 Portfolio"])
+tab_dashboard, tab_analysis, tab_prediction, tab_strategy, tab_portfolio = st.tabs([
+    "📊 Dashboard", "🔍 Analysis", "🔮 Prediction", "⚙️ Pro Strategy", "💼 Portfolio"
+])
 
 # --- Sidebar Enhanced: Watchlist & Alerts ---
 with st.sidebar:
@@ -167,9 +176,9 @@ if 'alerts' in st.session_state:
 
 # --- Sidebar: Live Mode ---
 st.sidebar.markdown("---")
-live_mode = st.sidebar.toggle("⚡ Pro Live Refresh (60s)", value=False)
+live_mode = st.sidebar.toggle("⚡ Pro Live Refresh (30s)", value=False)
 if live_mode:
-    st.sidebar.caption("Next refresh in: 60s")
+    st.sidebar.caption("Next refresh in: 30s")
 
 # --- TAB: Dashboard ---
 with tab_dashboard:
@@ -245,7 +254,7 @@ with tab_dashboard:
                 <div class="fintech-card" style="border-left: 5px solid {rec['color']};">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <h2 style="color: {rec['color']}; margin: 0;">{rec['action']}</h2>
-                        <span style="background: {rec['color']}22; color: {rec['color']}; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; border: 1px solid {rec['color']};">AI SIGNAL</span>
+                        <span style="background: {rec['color']}22; color: {rec['color']}; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; border: 1px solid {rec['color']};">STRENGTH: {rec['strength']}%</span>
                     </div>
                     <p style="margin-top: 10px;">{rec['explanation']}</p>
                     <hr style="border-color: #3e4451; margin: 15px 0;">
@@ -262,10 +271,28 @@ with tab_dashboard:
                 </div>
                 
                 <div class="fintech-card">
-                    <h3>🔍 Trading Context</h3>
-                    <p><b>Trend:</b> {interpretations['Trend']}</p>
+                    <h3>🔍 Multi-Timeframe Trends</h3>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div style="text-align: center; flex: 1; padding: 10px; border-radius: 8px; background: #0e1117;">
+                            <small style="color: #888;">1D</small><br>
+                            <b style="color: {'#00ffcc' if interpretations['Trend_1D'] == 'Uptrend' else '#ff4b4b'};">{interpretations['Trend_1D']}</b>
+                        </div>
+                        <div style="text-align: center; flex: 1; padding: 10px; border-radius: 8px; background: #0e1117;">
+                            <small style="color: #888;">1W</small><br>
+                            <b style="color: {'#00ffcc' if interpretations['Trend_1W'] == 'Uptrend' else '#ff4b4b'};">{interpretations['Trend_1W']}</b>
+                        </div>
+                        <div style="text-align: center; flex: 1; padding: 10px; border-radius: 8px; background: #0e1117;">
+                            <small style="color: #888;">1M</small><br>
+                            <b style="color: {'#00ffcc' if interpretations['Trend_1M'] == 'Bullish' else '#ff4b4b'};">{interpretations['Trend_1M']}</b>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fintech-card">
+                    <h3>⚡ Risk Metrics</h3>
                     <p><b>Risk Profile:</b> <span style="color: {'#ff4b4b' if interpretations['Risk'] == 'High' else '#f1c40f' if interpretations['Risk'] == 'Medium' else '#00ffcc'};">{interpretations['Risk']}</span></p>
-                    <p><b>Volatility:</b> {interpretations['Volatility']}</p>
+                    <p><b>Volatility (Ann.):</b> {interpretations['Volatility']}</p>
+                    <p><b>Market Regime:</b> <span style="color: #00ffcc;">{detect_market_regime(df)}</span></p>
                 </div>
                 """, unsafe_allow_html=True)
             except Exception as e:
@@ -345,13 +372,18 @@ with tab_prediction:
                     st.download_button("📥 Download Forecast CSV", data=forecast_df.to_csv(index=False), file_name=f"{p_ticker}_forecast.csv", mime="text/csv")
 
                 with col_metrics:
-                    st.subheader("Model Status")
-                    cf_score = 88.5 # Simulated 
+                    st.subheader("Asset Risk Profile")
+                    risk_m = get_risk_assessment_metrics(p_df)
                     st.markdown(f"""
                     <div class="fintech-card">
-                        <p>Confidence Level</p>
-                        <h2 style='color: #00ffcc;'>{cf_score}%</h2>
-                        <small>Backtesting Reliability</small>
+                        <small style="color: #888;">SHARPE RATIO</small>
+                        <h2 style='color: #00ffcc;'>{risk_m['sharpe_ratio']:.2f}</h2>
+                        <small>Risk-Adjusted Return</small>
+                    </div>
+                    <div class="fintech-card">
+                        <small style="color: #888;">MAX DRAWDOWN</small>
+                        <h2 style='color: #ff4b4b;'>{risk_m['max_drawdown']:.2%}</h2>
+                        <small>Peak-to-Trough Loss</small>
                     </div>
                     """, unsafe_allow_html=True)
                     from utils.evaluator import compare_models
@@ -359,6 +391,32 @@ with tab_prediction:
                     st.table(compare_models({"RF": (results['y_test'], results['rf_preds']), "LR": (results['y_test'], results['lr_preds'])}))
         else:
             st.warning("Enter a valid ticker to start forecasting.")
+
+# --- TAB: Pro Strategy ---
+with tab_strategy:
+    st.title("Algorithmic Trading Simulation")
+    s_ticker = st.text_input("Ticker to Backtest", value=ticker, key="strat_ticker").upper()
+    
+    with st.spinner("Simulating AI Strategy..."):
+        s_df = get_cached_data(s_ticker, (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
+        if not s_df.empty:
+            s_df = add_indicators(s_df)
+            bt_results = backtest_strategy(s_df)
+            
+            sc1, sc2, sc3, sc4 = st.columns(4)
+            sc1.metric("Total Return", f"{bt_results['total_return_pct']:.2f}%")
+            sc2.metric("Win Rate", f"{bt_results['win_rate']:.1f}%")
+            sc3.metric("Total Trades", bt_results['total_trades'])
+            sc4.metric("Ending Capital", f"${bt_results['final_capital']:,.2f}")
+            
+            st.markdown("---")
+            # Equity Curve Chart
+            df_bt = pd.DataFrame({"Equity": bt_results['equity_curve']}, index=s_df.index)
+            fig_bt = px.line(df_bt, y="Equity", title=f"Equity Growth Simulation: {s_ticker}", template="plotly_dark")
+            fig_bt.update_traces(line_color="cyan", line_width=3)
+            st.plotly_chart(fig_bt, use_container_width=True)
+        else:
+            st.warning("Enter a valid ticker for backtesting.")
 
 # --- TAB: Portfolio ---
 with tab_portfolio:
@@ -378,16 +436,34 @@ with tab_portfolio:
     if st.session_state.portfolio:
         df_port, summary = calculate_portfolio_performance(st.session_state.portfolio)
         
+        # AI Advisor Integration
+        advisor = analyze_portfolio(st.session_state.portfolio)
+        
         sc1, sc2, sc3 = st.columns(3)
         sc1.metric("Market Value", f"${summary['total_current_value']:,.2f}")
         sc2.metric("Unrealized P/L", f"${summary['total_pl']:,.2f}", f"{summary['total_pl_pct']:.2f}%")
-        sc3.metric("Invested Capital", f"${summary['total_invested']:,.2f}")
+        sc3.metric("Portfolio Status", advisor['status'])
+        
+        # Portfolio AI Advisor Alerts
+        if advisor['warnings']:
+            with st.expander("🤖 AI Portfolio Advisor Alert", expanded=True):
+                for warn in advisor['warnings']:
+                    st.warning(warn)
+                for sug in advisor['suggestions']:
+                    st.info(f"💡 Suggestion: {sug}")
         
         st.markdown("---")
         col_t, col_p = st.columns([3, 2])
         with col_t:
             st.subheader("Holdings Summary")
             st.dataframe(df_port, use_container_width=True)
+            
+            # Trade History log
+            st.subheader("📝 Trade Activity Log")
+            if st.session_state.trade_history:
+                st.dataframe(pd.DataFrame(st.session_state.trade_history), use_container_width=True)
+            else:
+                st.caption("No trade activity recorded yet.")
         with col_p:
             st.subheader("Asset Allocation")
             st.plotly_chart(plot_allocation_chart(df_port), use_container_width=True)
@@ -400,5 +476,5 @@ st.sidebar.write("⚡ v4.5.0 Pro | AI Trading Assistant")
 # --- Auto-Refresh Logic ---
 if live_mode:
     import time
-    time.sleep(60)
+    time.sleep(30)
     st.rerun()
