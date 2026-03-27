@@ -31,115 +31,121 @@ from utils.risk_tools import calculate_risk_price_points
 # --- Page Config ---
 st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
 
-# --- Custom Styles (Professional Trading Terminal) ---
+# --- Custom Styles (Institutional Trading Terminal V2) ---
 st.markdown("""
     <style>
-    /* Global Reset */
+    /* Global Reset & High Contrast */
     .main { 
         background-color: #0f172a !important; 
-        color: #ffffff !important; 
-        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+        color: #e2e8f0 !important; 
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
     
-    /* High-Contrast Metrics */
+    /* Institutional Metrics */
     div[data-testid="stMetricValue"] { 
         color: #ffffff !important; 
         font-weight: 800 !important; 
-        font-size: 2.2rem !important;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-    div[data-testid="stMetricDelta"] > div { 
-        font-weight: 700 !important; 
+        font-size: 2.4rem !important;
+        text-shadow: 0 4px 8px rgba(0,0,0,0.4);
     }
     div[data-testid="stMetricLabel"] { 
-        color: #cbd5e1 !important; 
-        font-weight: 600 !important;
+        color: #94a3b8 !important; 
+        font-weight: 700 !important;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
     }
     
-    /* Solid Institutional Cards */
+    /* V2 Solid Card System */
     .fintech-card {
         background-color: #1e293b !important;
-        padding: 24px;
+        padding: 30px;
         border-radius: 12px;
         border: 2px solid #334155;
         margin-bottom: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
         opacity: 1 !important;
     }
     .fintech-card:hover { 
         border-color: #475569; 
     }
     
-    /* Typography & Visibility */
+    /* Typography & Headers */
     h1, h2, h3 { 
         color: #ffffff !important; 
-        font-weight: 800 !important; 
-        margin-bottom: 1rem !important;
+        font-weight: 900 !important; 
+        letter-spacing: -0.025em !important;
+        margin-bottom: 1.5rem !important;
     }
-    p, span, li, small, b { 
-        color: #ffffff !important; 
+    p, span, li, b { 
+        color: #e2e8f0 !important; 
         opacity: 1 !important;
-        font-weight: 400;
+        font-weight: 500;
     }
     .secondary-text {
-        color: #cbd5e1 !important;
+        color: #94a3b8 !important;
+        font-size: 0.9em;
     }
     
-    /* Professional Buttons */
+    /* Institutional Buttons */
     .stButton>button { 
         width: 100%; 
         border-radius: 8px; 
-        background-color: #2563eb !important;
+        background: #2563eb !important;
         color: #ffffff !important;
-        height: 3.2em;
+        height: 3.5em;
         border: none;
-        font-weight: 700;
+        font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 1px;
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .stButton>button:hover { 
         background-color: #1d4ed8 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
+        transform: translateY(-2px);
     }
     
-    /* Tabs & Navigation */
+    /* Tabs & High-Contrast Navigation */
     .stTabs [data-baseweb="tab-list"] { 
         background-color: #1e293b; 
-        padding: 5px;
-        border-radius: 10px;
-        border: 1px solid #334155;
+        padding: 8px;
+        border-radius: 12px;
+        border: 2px solid #334155;
+        gap: 15px;
     }
     .stTabs [data-baseweb="tab"] { 
-        color: #94a3b8; 
-        font-weight: 700;
-        padding: 10px 20px;
+        color: #94a3b8 !important; 
+        font-weight: 800 !important;
+        padding: 12px 24px !important;
+        border-radius: 8px !important;
+        transition: all 0.2s;
     }
     .stTabs [aria-selected="true"] { 
         color: #ffffff !important; 
         background-color: #334155 !important;
-        border-radius: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
     }
     
-    /* Sidebar Cleanup */
+    /* Sidebar Institutional Pulse */
     [data-testid="stSidebar"] {
         background-color: #0f172a !important;
-        border-right: 1px solid #334155;
+        border-right: 2px solid #1e293b;
     }
-    
-    /* Chart Overlays */
-    .js-plotly-plot .plotly .modebar {
-        background-color: rgba(30, 41, 59, 0.8) !important;
+    [data-testid="stSidebar"] h1 { font-size: 1.8em !important; }
+    [data-testid="stSidebar"] p { font-size: 0.95em !important; color: #94a3b8 !important; }
+
+    /* Dataframes & Tables */
+    .stDataFrame {
+        border: 2px solid #334155 !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Sidebar Branding ---
+# --- Sidebar Branding & High Contrast Watchlist ---
 st.sidebar.markdown("# 📈 GrowthFlow AI")
-st.sidebar.markdown("*Institutional-Grade Predictive Analytics*")
+st.sidebar.markdown("<p style='color: #94a3b8; font-weight: 600; font-size: 1.1em;'>Elite Predictive Analytics</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 # --- Initialize Session State ---
@@ -560,15 +566,15 @@ with tab_prediction:
                     st.subheader("Asset Risk Profile")
                     risk_m = get_risk_assessment_metrics(p_df)
                     st.markdown(f"""
-                    <div class="fintech-card" style="border-right: 4px solid #22c55e;">
-                        <small style="color: #cbd5f5; font-weight: 800;">SHARPE RATIO</small>
-                        <h2 style='color: #22c55e; margin: 5px 0;'>{risk_m['sharpe_ratio']:.2f}</h2>
-                        <small style="color: #cbd5f5;">Risk-Adjusted Performance</small>
+                    <div class="fintech-card" style="border-right: 8px solid #22c55e;">
+                        <small style="color: #94a3b8; font-weight: 800;">SHARPE RATIO</small>
+                        <h1 style='color: #22c55e; margin: 10px 0; font-size: 2.8em;'>{risk_m.get('sharpe_ratio', 0):.2f}</h1>
+                        <p style="color: #e2e8f0 !important; font-weight: 600;">EQUITY PERFORMANCE</p>
                     </div>
-                    <div class="fintech-card" style="border-right: 4px solid #ef4444;">
-                        <small style="color: #cbd5f5; font-weight: 800;">MAX DRAWDOWN</small>
-                        <h2 style='color: #ef4444; margin: 5px 0;'>{risk_m['max_drawdown']:.2%}</h2>
-                        <small style="color: #cbd5f5;">Peak-to-Trough Volatility</small>
+                    <div class="fintech-card" style="border-right: 8px solid #ef4444;">
+                        <small style="color: #94a3b8; font-weight: 800;">MAX DRAWDOWN</small>
+                        <h1 style='color: #ef4444; margin: 10px 0; font-size: 2.8em;'>{risk_m.get('max_drawdown', 0):.2%}</h1>
+                        <p style="color: #e2e8f0 !important; font-weight: 600;">VOLATILITY RISK</p>
                     </div>
                     """, unsafe_allow_html=True)
                     from utils.evaluator import compare_models
@@ -635,9 +641,10 @@ with tab_portfolio:
                 adv_color = "#ef4444"
                 
             st.markdown(f"""
-            <div class="fintech-card" style="text-align: center; border: 2px solid {adv_color}; background: #0f172a;">
-                <small style="color: #cbd5f5; font-weight: 800;">AI ADVISOR STATUS</small><br>
-                <h1 style="color: {adv_color}; margin: 10px 0; font-size: 2.2em; font-weight: 900;">{advisor.get('status', 'N/A').upper()}</h1>
+            <div class="fintech-card" style="text-align: center; border: 2px solid {adv_color}; background: #0f172a; padding: 40px !important;">
+                <small style="color: #94a3b8; font-weight: 800; letter-spacing: 2px;">ELITE ADVISOR STATUS</small><br>
+                <h1 style="color: {adv_color}; margin: 15px 0; font-size: 3.5em; font-weight: 900; letter-spacing: -2px;">{advisor.get('status', 'N/A').upper()}</h1>
+                <p style="color: #e2e8f0; font-weight: 600;">ACTIVE PORTFOLIO OPTIMIZATION: ON</p>
             </div>
             """, unsafe_allow_html=True)
             
