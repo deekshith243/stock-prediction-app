@@ -139,7 +139,9 @@ with tab_home:
         ticker = st.text_input("Enter Ticker Symbol", value="AAPL", help="e.g. MSFT, TSLA, BTC-USD").upper()
         
         with st.spinner(f"Analyzing {ticker}..."):
-            df = get_cached_data(ticker, str(datetime.now() - timedelta(days=365)), str(datetime.now().date()))
+            start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+            end_date = datetime.now().strftime('%Y-%m-%d')
+            df = get_cached_data(ticker, start_date, end_date)
             if not df.empty:
                 try:
                     st.plotly_chart(plot_candlestick(df, ticker), use_container_width=True)
@@ -150,7 +152,7 @@ with tab_home:
                 with st.expander("⚖️ Compare with another asset"):
                     comp_ticker = st.text_input("Comparison Ticker", value="MSFT").upper()
                     if comp_ticker and comp_ticker != ticker:
-                        df_comp = get_cached_data(comp_ticker, str(datetime.now() - timedelta(days=365)), str(datetime.now().date()))
+                        df_comp = get_cached_data(comp_ticker, start_date, end_date)
                         if not df_comp.empty:
                             fig_comp = go.Figure()
                             fig_comp.add_trace(go.Scatter(x=df.index, y=df['Close']/df['Close'].iloc[0], name=ticker))
@@ -182,7 +184,9 @@ with tab_predict:
     ticker = st.text_input("Select Ticker for AI Forecast", value="AAPL", key="forecast_ticker").upper()
     
     with st.spinner("Generating AI Projections..."):
-        df = get_cached_data(ticker, str(datetime.now() - timedelta(days=730)), str(datetime.now().date()))
+        start_date = (datetime.now() - timedelta(days=730)).strftime('%Y-%m-%d')
+        end_date = datetime.now().strftime('%Y-%m-%d')
+        df = get_cached_data(ticker, start_date, end_date)
         if not df.empty:
             results = get_ml_results(df, 60) # Default seq_length
             if not results.get('success', True):

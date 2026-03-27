@@ -15,7 +15,11 @@ def fetch_stock_data(ticker: str, start_date: str, end_date: str, save_path: str
         try:
             print(f"Fetching {ticker} (Attempt {attempt + 1})...")
             # Use yf.download for better reliability than Ticker.history()
-            df = yf.download(ticker, start=start_date, end=end_date, progress=False, timeout=10)
+            df = yf.download(ticker, start=start_date, end=end_date, progress=False, timeout=15)
+            
+            # Handle MultiIndex columns (common in yfinance 0.2.x)
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
             
             if not df.empty:
                 # Ensure the save directory exists
@@ -26,17 +30,21 @@ def fetch_stock_data(ticker: str, start_date: str, end_date: str, save_path: str
                 df.to_csv(full_path)
                 return df
                 
-            # If specific range fails, try a broader period
+            # If specific range fails, try a broader period (1y or 2y)
             if attempt == retries - 1:
                 print(f"Attempting fallback period for {ticker}...")
-                df = yf.download(ticker, period="2y", interval="1d", progress=False, timeout=10)
+                df = yf.download(ticker, period="1y", interval="1d", progress=False, timeout=15)
+                
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = df.columns.get_level_values(0)
+                    
                 if not df.empty:
                     return df
 
         except Exception as e:
             print(f"Error on attempt {attempt + 1} for {ticker}: {e}")
             if attempt < retries - 1:
-                time.sleep(1) # Wait before retry
+                time.sleep(2) # Wait before retry
                 
     print(f"No data found for {ticker} after {retries} attempts.")
     return pd.DataFrame()
