@@ -32,3 +32,26 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df['MACD'], df['MACD_Signal'] = calculate_macd(df)
     df['BB_Middle'], df['BB_Upper'], df['BB_Lower'] = calculate_bollinger_bands(df)
     return df
+
+def get_indicator_interpretation(df: pd.DataFrame):
+    """Provides textual interpretation of the latest indicator values."""
+    latest = df.iloc[-1]
+    interpretations = {}
+
+    # RSI
+    rsi = latest['RSI']
+    if rsi < 30: interpretations['RSI'] = "Oversold (Buying Opportunity)"
+    elif rsi > 70: interpretations['RSI'] = "Overbought (Selling Pressure)"
+    else: interpretations['RSI'] = "Neutral"
+
+    # MACD
+    if latest['MACD'] > latest['MACD_Signal']: interpretations['MACD'] = "Bullish Crossover"
+    else: interpretations['MACD'] = "Bearish Crossover"
+
+    # Bollinger Bands
+    price = latest['Close']
+    if price > latest['BB_Upper']: interpretations['BB'] = "Above Upper Band (Overextended)"
+    elif price < latest['BB_Lower']: interpretations['BB'] = "Below Lower Band (Undervalued)"
+    else: interpretations['BB'] = "Within Range"
+
+    return interpretations

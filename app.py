@@ -8,18 +8,12 @@ from datetime import datetime, timedelta
 # Import utilities
 from utils.data_loader import fetch_stock_data
 from utils.preprocessing import handle_missing_values, scale_features, create_sequences, split_data
-from utils.visualizer import plot_candlestick, plot_moving_averages
-from utils.indicators import add_indicators
-from utils.sentiment import get_sentiment
-from utils.evaluator import compare_models
-from utils.recommender import get_recommendation
-from utils.portfolio import calculate_portfolio_performance, plot_allocation_chart
-from utils.alerts import show_alert_ui
-
-# Import models
 from models.rf_model import train_rf_model, forecast_future_rf
 from models.linear_regression import train_linear_regression, forecast_future_lr
 from models.arima_model import train_arima
+
+from utils.visualizer import plot_candlestick, plot_moving_averages, plot_forecast_with_confidence
+from utils.indicators import add_indicators, get_indicator_interpretation
 
 # --- Page Config ---
 st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
@@ -73,9 +67,30 @@ st.sidebar.markdown("---")
 # --- Initialize Session State ---
 if 'portfolio' not in st.session_state:
     st.session_state.portfolio = {"AAPL": {"qty": 10, "avg_price": 150.0}, "TSLA": {"qty": 5, "avg_price": 200.0}}
+if 'watchlist' not in st.session_state:
+    st.session_state.watchlist = ["AAPL", "TSLA", "BTC-USD"]
 
 # --- Tabbed Navigation ---
-tab_home, tab_predict, tab_portfolio = st.tabs(["📊 Dashboard", "🔮 AI Forecasts", "💼 My Holdings"])
+tab_home, tab_analysis, tab_predict, tab_portfolio = st.tabs(["📊 Dashboard", "🔍 Analysis", "🔮 AI Forecasts", "💼 My Holdings"])
+
+# --- Sidebar Enhanced: Watchlist & Alerts ---
+with st.sidebar:
+    st.markdown("### 📋 My Watchlist")
+    for w_ticker in st.session_state.watchlist:
+        w_col1, w_col2 = st.columns([3, 1])
+        w_col1.markdown(f"**{w_ticker}**")
+        if w_col2.button("🗑️", key=f"del_{w_ticker}"):
+            st.session_state.watchlist.remove(w_ticker)
+            st.rerun()
+    
+    add_w = st.text_input("Add Ticker to Watchlist", key="add_w").upper()
+    if st.button("Add"):
+        if add_w and add_w not in st.session_state.watchlist:
+            st.session_state.watchlist.append(add_w)
+            st.rerun()
+
+    st.markdown("---")
+    show_alert_ui()
 
 # --- Helper Functions (with Caching) ---
 @st.cache_data
@@ -105,13 +120,14 @@ def get_ml_results(df, seq_length, n_days=7):
         lr_forecast = forecast_future_lr(lr_model, X_test[-1], days=n_days)
         
         # ARIMA (Statsmodels)
-        arima_forecast, _ = train_arima(df['Close'].values, forecast_days=n_days)
+        arima_forecast, arima_conf_int = train_arima(df['Close'].values, forecast_days=n_days)
         
         return {
             "y_test": y_test,
             "rf_preds": rf_preds, "rf_forecast": rf_forecast,
             "lr_preds": lr_preds, "lr_forecast": lr_forecast,
             "arima_forecast": arima_forecast,
+            "arima_conf_int": arima_conf_int,
             "scaler": scaler,
             "success": True
         }
@@ -176,7 +192,51 @@ with tab_home:
             </div>
             """, unsafe_allow_html=True)
             
-            st.info("💡 Tip: Use the 'AI Forecasts' tab to view 7-day price projectons based on this sentiment and technical data.")
+            # Smart Recommendation Card
+            last_price = df['Close'].iloc[-1]
+            try:
+                results_temp = get_ml_results(df, 60, n_days=1)
+                next_pred = results_temp['rf_forecast'][0]
+                rsi = df['RSI'].iloc[-1] if 'RSI' in df.columns else 50
+                macd = df['MACD'].iloc[-1] if 'MACD' in df.columns else 0
+                macd_s = df['MACD_Signal'].iloc[-1] if 'MACD_Signal' in df.columns else 0
+                bb_u = df['BB_Upper'].iloc[-1] if 'BB_Upper' in df.columns else 0
+                bb_l = df['BB_Lower'].iloc[-1] if 'BB_Lower' in df.columns else 0
+                
+                rec = get_recommendation(last_price, next_pred, rsi, sentiment, macd, macd_s, bb_u, bb_l)
+                st.markdown(f"""
+                <div class="fintech-card" style="border-left: 5px solid {rec['color']};">
+                    <h2 style="color: {rec['color']};">{rec['action']}</h2>
+                    <p>{rec['explanation']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+            except:
+                pass
+            
+            st.info("💡 Tip: Navigate through tabs for deep analysis and 180-day forecasts.")
+
+# --- TAB: Analysis ---
+with tab_analysis:
+    st.title("Technical Deep-Dive")
+    if not df.empty:
+        col_an1, col_an2 = st.columns([2, 1])
+        with col_an1:
+            st.plotly_chart(plot_moving_averages(df, ticker), use_container_width=True)
+            
+            # Indicators Interpretation
+            st.subheader("Indicator Insights")
+            interpretations = get_indicator_interpretation(df)
+            ic1, ic2, ic3 = st.columns(3)
+            ic1.info(f"**RSI**: {interpretations['RSI']}")
+            ic2.info(f"**MACD**: {interpretations['MACD']}")
+            ic3.info(f"**Bollinger**: {interpretations['BB']}")
+            
+        with col_an2:
+            st.subheader("Key Statistics")
+            st.write(df.tail(10))
+            st.download_button("📥 Export Historical Data", data=df.to_csv(), file_name=f"{ticker}_history.csv")
+    else:
+        st.warning("Please fetch data in the Dashboard first.")
 
 # --- TAB: AI Forecasts ---
 with tab_predict:
@@ -201,10 +261,13 @@ with tab_predict:
             with col_chart:
                 st.subheader(f"{n_days}-Day Price Trajectory")
                 days_range = [f"Day {i+1}" for i in range(n_days)]
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=days_range, y=inv(results['rf_forecast']), name="RandomForest (ML)", line=dict(color='cyan', width=4)))
-                fig.add_trace(go.Scatter(x=days_range, y=results['arima_forecast'], name="ARIMA (Statistical)", line=dict(color='magenta', dash='dash')))
-                fig.update_layout(template="plotly_dark", height=450, legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+                
+                # Plot with Confidence Bands
+                conf_int = results['arima_conf_int']
+                fig = plot_forecast_with_confidence(days_range, inv(results['rf_forecast']), 
+                                                   inv(conf_int[:, 0]), inv(conf_int[:, 1]), 
+                                                   model_name="Ensemble RF/ARIMA")
+                
                 try:
                     st.plotly_chart(fig, use_container_width=True)
                 except Exception as chart_err:
