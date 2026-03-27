@@ -42,3 +42,15 @@ def forecast_future_rf(model, last_sequence, days=7):
         temp_batch[0, -1] = pred
         
     return np.array(future_preds)
+
+def get_rf_feature_importance(model):
+    """
+    Returns the feature importance from the trained RF model.
+    """
+    if hasattr(model, 'feature_importances_'):
+        importances = model.feature_importances_
+        # Standard labels for our sequence-based model
+        labels = ["Price Momentum", "Recent Trend", "Volatility Factor", "Volume Intensity", "Sentiment Weight"]
+        # Map top features
+        return dict(zip(labels, importances[:5]))
+    return {}

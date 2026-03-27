@@ -17,10 +17,13 @@ from utils.indicators import add_indicators, get_indicator_interpretation
 from utils.recommender import get_recommendation
 from utils.alerts import show_alert_ui, check_alerts
 
-# Pro Analytics Imports
 from utils.risk_metrics import get_risk_assessment_metrics
 from utils.backtester import backtest_strategy
 from utils.portfolio_advisor import analyze_portfolio, detect_market_regime
+
+# Elite Features Imports
+from models.rf_model import get_rf_feature_importance
+from utils.risk_tools import calculate_risk_price_points
 
 # --- Page Config ---
 st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
@@ -109,7 +112,7 @@ def get_ml_results(df, seq_length, n_days=7):
         
         return {
             "y_test": y_test,
-            "rf_preds": rf_preds, "rf_forecast": rf_forecast,
+            "rf_preds": rf_preds, "rf_forecast": rf_forecast, "rf_model": rf_model,
             "lr_preds": lr_preds, "lr_forecast": lr_forecast,
             "arima_forecast": arima_forecast,
             "arima_conf_int": arima_conf_int,
@@ -180,9 +183,55 @@ live_mode = st.sidebar.toggle("⚡ Pro Live Refresh (30s)", value=False)
 if live_mode:
     st.sidebar.caption("Next refresh in: 30s")
 
+# --- Sidebar: Elite Reporting ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("📥 Elite Reporting")
+if st.sidebar.button("📊 Generate Institutional Report"):
+    try:
+        r_df = get_cached_data(ticker, start_date, end_date)
+        r_df = add_indicators(r_df)
+        r_sent = get_sentiment(ticker)
+        
+        # Build Report Data
+        report_data = {
+            "Symbol": ticker,
+            "Price": f"${r_df['Close'].iloc[-1]:.2f}",
+            "Sentiment": r_sent['label'],
+            "Sentiment_Score": r_sent['score'],
+            "Risk_Level": get_indicator_interpretation(r_df).get('Risk', 'N/A'),
+            "Recommended_Action": get_recommendation(r_df['Close'].iloc[-1], r_df['Close'].iloc[-1] * 1.01, r_df['RSI'].iloc[-1], r_sent).get('action', 'HOLD')
+        }
+        
+        report_df = pd.DataFrame([report_data])
+        st.sidebar.download_button("Download Full Report (.csv)", data=report_df.to_csv(index=False), file_name=f"{ticker}_Elite_Report.csv", mime="text/csv")
+        st.sidebar.success("Report Ready!")
+    except Exception as e:
+        st.sidebar.error("Report generation failed.")
+
 # --- TAB: Dashboard ---
 with tab_dashboard:
-    st.title("Market Overview")
+    st.title("Elite Market Terminal")
+    
+    # Elite Heatmap Section
+    with st.expander("📊 Elite Market Heatmap", expanded=True):
+        h_cols = st.columns(len(st.session_state.watchlist) if st.session_state.watchlist else 1)
+        for idx, w_ticker in enumerate(st.session_state.watchlist):
+            try:
+                h_df = get_cached_data(w_ticker, (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
+                if not h_df.empty:
+                    h_val = h_df['Close'].iloc[-1]
+                    h_change = ((h_val - h_df['Close'].iloc[-2]) / h_df['Close'].iloc[-2]) * 100
+                    h_color = "#00ffcc" if h_change >= 0 else "#ff4b4b"
+                    h_cols[idx % 5].markdown(f"""
+                    <div style="background: {h_color}22; border: 1px solid {h_color}; padding: 15px; border-radius: 8px; text-align: center;">
+                        <small>{w_ticker}</small><br>
+                        <b style="color: {h_color}; font-size: 1.2em;">{h_change:+.2f}%</b><br>
+                        <small>${h_val:.2f}</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+            except: pass
+
+    st.markdown("---")
     
     # Quick Summary Metrics
     c1, c2, c3, c4 = st.columns(4)
@@ -250,6 +299,9 @@ with tab_dashboard:
                     latest_rec['BB_Upper'], latest_rec['BB_Lower']
                 )
                 
+                # Risk Price Points
+                risk_pts = calculate_risk_price_points(last_price, df, direction=rec['action'])
+                
                 st.markdown(f"""
                 <div class="fintech-card" style="border-left: 5px solid {rec['color']};">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -260,40 +312,41 @@ with tab_dashboard:
                     <hr style="border-color: #3e4451; margin: 15px 0;">
                     <div style="display: flex; justify-content: space-between;">
                         <div>
-                            <small style="color: #888;">IDEAL ENTRY</small><br>
-                            <b style="color: #00ffcc;">${rec['entry']}</b>
+                            <small style="color: #888;">STOP LOSS</small><br>
+                            <b style="color: #ff4b4b;">${risk_pts['stop_loss']}</b>
                         </div>
                         <div>
-                            <small style="color: #888;">TARGET EXIT</small><br>
-                            <b style="color: #ff4b4b;">${rec['exit']}</b>
+                            <small style="color: #888;">PROFIT TARGET</small><br>
+                            <b style="color: #00ffcc;">${risk_pts['target_profit']}</b>
                         </div>
                     </div>
                 </div>
                 
                 <div class="fintech-card">
-                    <h3>🔍 Multi-Timeframe Trends</h3>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <div style="text-align: center; flex: 1; padding: 10px; border-radius: 8px; background: #0e1117;">
-                            <small style="color: #888;">1D</small><br>
-                            <b style="color: {'#00ffcc' if interpretations['Trend_1D'] == 'Uptrend' else '#ff4b4b'};">{interpretations['Trend_1D']}</b>
-                        </div>
-                        <div style="text-align: center; flex: 1; padding: 10px; border-radius: 8px; background: #0e1117;">
-                            <small style="color: #888;">1W</small><br>
-                            <b style="color: {'#00ffcc' if interpretations['Trend_1W'] == 'Uptrend' else '#ff4b4b'};">{interpretations['Trend_1W']}</b>
-                        </div>
-                        <div style="text-align: center; flex: 1; padding: 10px; border-radius: 8px; background: #0e1117;">
-                            <small style="color: #888;">1M</small><br>
-                            <b style="color: {'#00ffcc' if interpretations['Trend_1M'] == 'Bullish' else '#ff4b4b'};">{interpretations['Trend_1M']}</b>
-                        </div>
-                    </div>
+                    <h3>🧠 Explainable AI (Why this prediction?)</h3>
+                    <p><small style="color: #888;">Feature Importance contribution to forecast</small></p>
                 </div>
+                """, unsafe_allow_html=True)
+                
+                # XAI Chart
+                res_xai = get_ml_results(df, 60, n_days=1)
+                xai_data = get_rf_feature_importance(res_xai.get('rf_model')) if res_xai.get('success') else {}
+                if xai_data:
+                    fig_xai = px.bar(x=list(xai_data.values()), y=list(xai_data.keys()), orientation='h', template="plotly_dark")
+                    fig_xai.update_traces(marker_color='cyan')
+                    fig_xai.update_layout(height=200, margin=dict(l=0, r=0, t=0, b=0), xaxis_title="Weight", yaxis_title="")
+                    st.plotly_chart(fig_xai, use_container_width=True)
 
+                st.markdown(f"""
                 <div class="fintech-card">
-                    <h3>⚡ Risk Metrics</h3>
-                    <p><b>Risk Profile:</b> <span style="color: {'#ff4b4b' if interpretations['Risk'] == 'High' else '#f1c40f' if interpretations['Risk'] == 'Medium' else '#00ffcc'};">{interpretations['Risk']}</span></p>
-                    <p><b>Volatility (Ann.):</b> {interpretations['Volatility']}</p>
-                    <p><b>Market Regime:</b> <span style="color: #00ffcc;">{detect_market_regime(df)}</span></p>
+                    <h3>📰 Elite News Sentiment</h3>
+                    <p><b>Outlook:</b> <span style="color: {'#00ffcc' if sentiment['label'] == 'Positive' else '#ff4b4b' if sentiment['label'] == 'Negative' else '#f1c40f'};">{sentiment['label']}</span></p>
                 </div>
+                """, unsafe_allow_html=True)
+                
+                with st.expander("View Latest Headlines"):
+                    for news_item in sentiment.get('headlines', []):
+                        st.markdown(f"- [{news_item['title']}]({news_item['link']}) ({news_item['publisher']})")
                 """, unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"Recommendation Error: {e}")
@@ -305,6 +358,15 @@ with tab_analysis:
         col_an1, col_an2 = st.columns([2, 1])
         with col_an1:
             st.plotly_chart(plot_moving_averages(df, ticker), use_container_width=True)
+            
+            with st.expander("📈 Correlation Intelligence"):
+                corr_ticker = st.text_input("Compare correlation with:", value="SPY").upper()
+                if corr_ticker and corr_ticker != ticker:
+                    df_corr = get_cached_data(corr_ticker, start_date, end_date)
+                    if not df_corr.empty:
+                        corr_val = df['Close'].corr(df_corr['Close'])
+                        st.metric(f"Correlation: {ticker} vs {corr_ticker}", f"{corr_val:.2f}", 
+                                help="High correlation (>0.7) means they move together.")
             
             # Indicators Interpretation
             st.subheader("Deep-Dive Insights")
