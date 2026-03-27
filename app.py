@@ -14,6 +14,8 @@ from models.arima_model import train_arima
 
 from utils.visualizer import plot_candlestick, plot_moving_averages, plot_forecast_with_confidence
 from utils.indicators import add_indicators, get_indicator_interpretation
+from utils.recommender import get_recommendation
+from utils.alerts import show_alert_ui, check_alerts
 
 # --- Page Config ---
 st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
