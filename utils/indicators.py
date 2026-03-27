@@ -60,12 +60,25 @@ def get_indicator_interpretation(df: pd.DataFrame):
     else: interpretations['BB'] = "Within Range"
 
     # Moving Averages Trend
+    trend_status = "Sideways"
     if not np.isnan(latest['MA50']) and not np.isnan(latest['MA200']):
-        if latest['MA50'] > latest['MA200']:
-            interpretations['Trend'] = "Golden Cross (Bullish Long-term)"
+        if price > latest['MA50'] > latest['MA200']:
+            trend_status = "Uptrend (Strong Bullish)"
+        elif price < latest['MA50'] < latest['MA200']:
+            trend_status = "Downtrend (Strong Bearish)"
         else:
-            interpretations['Trend'] = "Death Cross (Bearish Long-term)"
-    else:
-        interpretations['Trend'] = "Insufficient data for MA Cross"
+            trend_status = "Sideways / Consolidation"
+    
+    interpretations['Trend'] = trend_status
+    
+    # Volatility Risk Score
+    returns = df['Close'].pct_change().dropna()
+    volatility = returns.std() * np.sqrt(252) # Annualized Volatility
+    if volatility < 0.15: risk = "Low"
+    elif volatility < 0.30: risk = "Medium"
+    else: risk = "High"
+    
+    interpretations['Risk'] = risk
+    interpretations['Volatility'] = f"{volatility:.2%}"
 
     return interpretations

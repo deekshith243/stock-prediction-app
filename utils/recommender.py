@@ -61,23 +61,37 @@ def get_recommendation(last_price, next_day_pred, rsi, sentiment, macd=0, macd_s
         signals.append("Negative Market Sentiment")
 
     # Final logic
-    if score >= 2:
+    if score >= 4:
+        recommendation = "STRONG BUY"
+        color = "#00ff00" # Bright Green
+        explanation = "High conviction alignment across models and technicals."
+    elif score >= 2:
         recommendation = "BUY"
         color = "#00ffcc" # Greenish Cyan
-        explanation = "Technical indicators and forecast suggest an upward trend."
+        explanation = "Technical indicators suggest an accumulation phase."
+    elif score <= -4:
+        recommendation = "STRONG SELL"
+        color = "#ff0000" # Bright Red
+        explanation = "Extreme overbought or bearish breakdown detected."
     elif score <= -2:
         recommendation = "SELL"
-        color = "#ff4b4b" # Red
-        explanation = "Technical indicators and forecast suggest a downward trend."
+        color = "#ff4b4b" # Light Red
+        explanation = "Indicators suggest potential downward momentum."
     else:
         recommendation = "HOLD"
         color = "#f1c40f" # Yellow/Gold
-        explanation = "Market signals are neutral or conflicting."
+        explanation = "Market signals are neutral or consolidating."
+
+    # Entry/Exit Suggestions (Simple heuristics)
+    ideal_buy = last_price * 0.985 if bb_lower == 0 else max(bb_lower, last_price * 0.98)
+    ideal_sell = last_price * 1.05 if bb_upper == 0 else min(bb_upper, last_price * 1.06)
 
     return {
         "action": recommendation,
         "color": color,
         "score": score,
         "signals": signals,
-        "explanation": explanation
+        "explanation": explanation,
+        "entry": round(ideal_buy, 2),
+        "exit": round(ideal_sell, 2)
     }

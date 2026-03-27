@@ -160,11 +160,16 @@ with st.sidebar:
 if 'alerts' in st.session_state:
     for alert in st.session_state.alerts:
         if alert['active']:
-            # This is a bit expensive to do for all alerts on every rerun, but for demo it works
             a_df = get_cached_data(alert['ticker'], (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
             if not a_df.empty:
                 if check_alerts(a_df['Close'].iloc[-1], alert['target'], alert['ticker'], alert['direction']):
-                    alert['active'] = False # Deactivate after trigger
+                    alert['active'] = False 
+
+# --- Sidebar: Live Mode ---
+st.sidebar.markdown("---")
+live_mode = st.sidebar.toggle("⚡ Pro Live Refresh (60s)", value=False)
+if live_mode:
+    st.sidebar.caption("Next refresh in: 60s")
 
 # --- TAB: Dashboard ---
 with tab_dashboard:
@@ -226,20 +231,41 @@ with tab_dashboard:
                 results_temp = get_ml_results(df, 60, n_days=1)
                 next_pred = results_temp['rf_forecast'][0]
                 
-                # Add indicators for recommendation
                 df_rec = add_indicators(df)
                 latest_rec = df_rec.iloc[-1]
+                interpretations = get_indicator_interpretation(df_rec)
                 
                 rec = get_recommendation(
                     last_price, next_pred, latest_rec['RSI'], sentiment, 
                     latest_rec['MACD'], latest_rec['MACD_Signal'], 
                     latest_rec['BB_Upper'], latest_rec['BB_Lower']
                 )
+                
                 st.markdown(f"""
                 <div class="fintech-card" style="border-left: 5px solid {rec['color']};">
-                    <h2 style="color: {rec['color']};">{rec['action']}</h2>
-                    <p>{rec['explanation']}</p>
-                    <small>Score: {rec['score']} | Signals: {len(rec['signals'])}</small>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="color: {rec['color']}; margin: 0;">{rec['action']}</h2>
+                        <span style="background: {rec['color']}22; color: {rec['color']}; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; border: 1px solid {rec['color']};">AI SIGNAL</span>
+                    </div>
+                    <p style="margin-top: 10px;">{rec['explanation']}</p>
+                    <hr style="border-color: #3e4451; margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <small style="color: #888;">IDEAL ENTRY</small><br>
+                            <b style="color: #00ffcc;">${rec['entry']}</b>
+                        </div>
+                        <div>
+                            <small style="color: #888;">TARGET EXIT</small><br>
+                            <b style="color: #ff4b4b;">${rec['exit']}</b>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="fintech-card">
+                    <h3>🔍 Trading Context</h3>
+                    <p><b>Trend:</b> {interpretations['Trend']}</p>
+                    <p><b>Risk Profile:</b> <span style="color: {'#ff4b4b' if interpretations['Risk'] == 'High' else '#f1c40f' if interpretations['Risk'] == 'Medium' else '#00ffcc'};">{interpretations['Risk']}</span></p>
+                    <p><b>Volatility:</b> {interpretations['Volatility']}</p>
                 </div>
                 """, unsafe_allow_html=True)
             except Exception as e:
@@ -360,4 +386,10 @@ with tab_portfolio:
         st.info("Your portfolio is currently empty.")
 
 st.sidebar.markdown("---")
-st.sidebar.write("⚡ v4.0.0 Pro | Powered by AI")
+st.sidebar.write("⚡ v4.5.0 Pro | AI Trading Assistant")
+
+# --- Auto-Refresh Logic ---
+if live_mode:
+    import time
+    time.sleep(60)
+    st.rerun()
