@@ -4,29 +4,38 @@ import numpy as np
 def backtest_strategy(df: pd.DataFrame, initial_capital: float = 10000.0) -> dict:
     """
     Simulates a basic trading strategy based on RSI and MACD signals.
-    Returns performance metrics and equity curve.
     """
-    if df.empty or 'RSI' not in df.columns or 'MACD' not in df.columns:
-        return {"error": "Technical indicators missing for backtesting"}
+    if df.empty or 'RSI' not in df.columns or 'MACD' not in df.columns or 'MACD_Signal' not in df.columns:
+        return {
+            "initial_capital": initial_capital,
+            "final_capital": initial_capital,
+            "total_return_pct": 0.0,
+            "win_rate": 0.0,
+            "total_trades": 0,
+            "equity_curve": [initial_capital],
+            "success": False,
+            "error": "Required indicators (RSI, MACD, MACD_Signal) missing."
+        }
 
     capital = initial_capital
     position = 0
     trades = 0
     wins = 0
     equity_curve = [initial_capital]
+    buy_price = 0
     
+    for i in range(1, len(df)):
+        row = df.iloc[i]
+        
         # RELAXED strategy for demonstration: 
         # Buy if RSI < 45 OR MACD > Signal
-        # Sell if RSI > 55 OR MACD < Signal
-        
-        # BUY signal
         if position == 0 and (row['RSI'] < 45 or row['MACD'] > row['MACD_Signal']):
             position = capital / row['Close']
             capital = 0
             buy_price = row['Close']
             trades += 1
             
-        # SELL signal
+        # Sell if RSI > 55 OR MACD < Signal
         elif position > 0 and (row['RSI'] > 55 or row['MACD'] < row['MACD_Signal']):
             capital = position * row['Close']
             if row['Close'] > buy_price:
