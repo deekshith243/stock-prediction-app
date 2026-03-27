@@ -31,52 +31,109 @@ from utils.risk_tools import calculate_risk_price_points
 # --- Page Config ---
 st.set_page_config(page_title="GrowthFlow AI | Full-Stack Dashboard", layout="wide", initial_sidebar_state="expanded")
 
-# --- Custom Styles (Fintech Premium) ---
+# --- Custom Styles (Professional Trading Terminal) ---
 st.markdown("""
     <style>
-    /* Global Styles */
-    .main { background-color: #0f172a; color: #ffffff; font-family: 'Inter', sans-serif; }
-    
-    /* Premium Metrics */
-    div[data-testid="stMetricValue"] { color: #00ffcc !important; font-weight: bold; }
-    div[data-testid="stMetricLabel"] { color: #cbd5e1 !important; }
-    
-    /* Fintech Card Overhaul */
-    .fintech-card {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        padding: 24px;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 24px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        transition: transform 0.2s ease-in-out;
+    /* Global Reset */
+    .main { 
+        background-color: #0f172a !important; 
+        color: #ffffff !important; 
+        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
     }
-    .fintech-card:hover { border-color: #ff4b4b; transform: translateY(-2px); }
     
-    /* Typography & Headers */
-    h1, h2, h3 { color: #ff4b4b; font-weight: 800; letter-spacing: -0.5px; }
-    p, span, li, small { color: #e2e8f0 !important; } /* Force light text */
+    /* High-Contrast Metrics */
+    div[data-testid="stMetricValue"] { 
+        color: #ffffff !important; 
+        font-weight: 800 !important; 
+        font-size: 2.2rem !important;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    div[data-testid="stMetricDelta"] > div { 
+        font-weight: 700 !important; 
+    }
+    div[data-testid="stMetricLabel"] { 
+        color: #cbd5e1 !important; 
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
     
-    /* Buttons */
+    /* Solid Institutional Cards */
+    .fintech-card {
+        background-color: #1e293b !important;
+        padding: 24px;
+        border-radius: 12px;
+        border: 2px solid #334155;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        opacity: 1 !important;
+    }
+    .fintech-card:hover { 
+        border-color: #475569; 
+    }
+    
+    /* Typography & Visibility */
+    h1, h2, h3 { 
+        color: #ffffff !important; 
+        font-weight: 800 !important; 
+        margin-bottom: 1rem !important;
+    }
+    p, span, li, small, b { 
+        color: #ffffff !important; 
+        opacity: 1 !important;
+        font-weight: 400;
+    }
+    .secondary-text {
+        color: #cbd5e1 !important;
+    }
+    
+    /* Professional Buttons */
     .stButton>button { 
         width: 100%; 
-        border-radius: 10px; 
-        background: linear-gradient(45deg, #ff4b4b, #ff6b6b);
-        color: white;
-        height: 3em;
+        border-radius: 8px; 
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+        height: 3.2em;
         border: none;
         font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.2s;
     }
-    .stButton>button:hover { box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4); }
+    .stButton>button:hover { 
+        background-color: #1d4ed8 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
     
-    /* Tabs Customization */
-    .stTabs [data-baseweb="tab-list"] { background-color: transparent; }
-    .stTabs [data-baseweb="tab"] { color: #94a3b8; font-weight: 600; }
-    .stTabs [aria-selected="true"] { color: #ffffff !important; border-bottom-color: #ff4b4b !important; }
+    /* Tabs & Navigation */
+    .stTabs [data-baseweb="tab-list"] { 
+        background-color: #1e293b; 
+        padding: 5px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+    }
+    .stTabs [data-baseweb="tab"] { 
+        color: #94a3b8; 
+        font-weight: 700;
+        padding: 10px 20px;
+    }
+    .stTabs [aria-selected="true"] { 
+        color: #ffffff !important; 
+        background-color: #334155 !important;
+        border-radius: 6px;
+    }
     
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    /* Sidebar Cleanup */
+    [data-testid="stSidebar"] {
+        background-color: #0f172a !important;
+        border-right: 1px solid #334155;
+    }
+    
+    /* Chart Overlays */
+    .js-plotly-plot .plotly .modebar {
+        background-color: rgba(30, 41, 59, 0.8) !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -291,12 +348,12 @@ with tab_dashboard:
             # 1. Sentiment Card
             st.markdown(f"""
             <div class="fintech-card">
-                <h3 style="color: #ffffff; margin-bottom: 5px;">🎭 News Sentiment</h3>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 1.2em; font-weight: bold; color: {'#00ffcc' if sentiment['label'] == 'Positive' else '#ff4b4b' if sentiment['label'] == 'Negative' else '#f1c40f'};">{sentiment['label']}</span>
-                    <span style="background: rgba(255,255,255,0.1); padding: 2px 10px; border-radius: 12px; font-size: 0.9em; color: #cbd5f5 !important;">Conf: {sentiment_conf:.1f}%</span>
+                <h3 style="color: #ffffff; margin-bottom: 12px; font-size: 1.2em;">🎭 Market Sentiment</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #334155; padding: 12px; border-radius: 8px;">
+                    <span style="font-size: 1.3em; font-weight: 800; color: {'#22c55e' if sentiment['label'] == 'Positive' else '#ef4444' if sentiment['label'] == 'Negative' else '#facc15'};">{sentiment['label']}</span>
+                    <span style="color: #cbd5f5; font-weight: 700;">{sentiment_conf:.1f}% CONFIDENCE</span>
                 </div>
-                <p style="margin-top: 10px; font-style: italic; color: #94a3b8 !important;">"{sentiment['snippet']}"</p>
+                <p style="margin-top: 15px; color: #cbd5f5 !important; line-height: 1.5;">"{sentiment['snippet']}"</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -320,26 +377,31 @@ with tab_dashboard:
                 rec_icon = "🚀" if "BUY" in rec['action'] else "📉" if "SELL" in rec['action'] else "⚖️"
                 
                 # 2. Recommendation Card
+                rec_color = '#22c55e' if "BUY" in rec['action'] else '#ef4444' if "SELL" in rec['action'] else '#facc15'
                 st.markdown(f"""
-                <div class="fintech-card" style="border-top: 6px solid {rec['color']}; background: linear-gradient(135deg, {rec['color']}15 0%, #0f172a 100%);">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div class="fintech-card" style="border-left: 8px solid {rec_color}; background-color: #1e293b;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
                         <div>
-                            <small style="color: #94a3b8; font-weight: bold; text-transform: uppercase;">GrowthFlow Signal</small>
-                            <h1 style="color: {rec['color']}; margin: 0; font-size: 2.2em;">{rec_icon} {rec['action']}</h1>
+                            <small style="color: #94a3b8; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">ELITE SIGNAL</small>
+                            <h1 style="color: {rec_color}; margin: 5px 0 0 0; font-size: 2.8em; line-height: 1;">{rec_icon} {rec['action']}</h1>
                         </div>
-                        <div style="background: {rec['color']}; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: 800; font-size: 0.9em; box-shadow: 0 4px 10px {rec['color']}44;">
+                        <div style="background: {rec_color}; color: #000; padding: 8px 16px; border-radius: 6px; font-weight: 900; font-size: 1em;">
                             {rec['strength']}% STRENGTH
                         </div>
                     </div>
-                    <p style="margin: 15px 0; font-size: 1.1em; color: #ffffff !important; font-weight: 500;">{rec['explanation']}</p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px;">
-                        <div style="text-align: center; border-right: 1px solid rgba(255,255,255,0.1);">
-                            <small style="color: #ff4b4b; font-weight: 700; text-transform: uppercase;">🛑 Stop Loss</small><br>
-                            <span style="font-size: 1.4em; font-weight: 800; color: #ffffff !important;">${risk_pts['stop_loss']}</span>
+                    
+                    <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
+                        <p style="margin: 0; font-size: 1.1em; color: #ffffff !important; font-weight: 500;">{rec['explanation']}</p>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="background: #ef444422; border: 1px solid #ef4444; padding: 15px; border-radius: 8px; text-align: center;">
+                            <small style="color: #ef4444; font-weight: 800; text-transform: uppercase;">🛑 STOP LOSS</small><br>
+                            <span style="font-size: 1.6em; font-weight: 900; color: #ffffff !important;">${risk_pts['stop_loss']}</span>
                         </div>
-                        <div style="text-align: center;">
-                            <small style="color: #00ffcc; font-weight: 700; text-transform: uppercase;">🎯 Target</small><br>
-                            <span style="font-size: 1.4em; font-weight: 800; color: #ffffff !important;">${risk_pts['target_profit']}</span>
+                        <div style="background: #22c55e22; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; text-align: center;">
+                            <small style="color: #22c55e; font-weight: 800; text-transform: uppercase;">🎯 TARGET</small><br>
+                            <span style="font-size: 1.6em; font-weight: 900; color: #ffffff !important;">${risk_pts['target_profit']}</span>
                         </div>
                     </div>
                 </div>
@@ -349,31 +411,31 @@ with tab_dashboard:
                 t1d = interpretations.get('Trend_1D', 'N/A')
                 t1w = interpretations.get('Trend_1W', 'N/A')
                 t1m = interpretations.get('Trend_1M', 'N/A')
-                c1d = '#00ffcc' if t1d == 'Uptrend' else '#ff4b4b'
-                c1w = '#00ffcc' if t1w == 'Uptrend' else '#ff4b4b'
-                c1m = '#00ffcc' if t1m in ['Bullish', 'Uptrend'] else '#ff4b4b'
+                c1d = '#22c55e' if t1d == 'Uptrend' else '#ef4444'
+                c1w = '#22c55e' if t1w == 'Uptrend' else '#ef4444'
+                c1m = '#22c55e' if t1m in ['Bullish', 'Uptrend'] else '#ef4444'
                 
                 st.markdown(f"""
                 <div class="fintech-card">
-                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 15px;">🔍 Multi-Timeframe Pulse</h3>
-                    <div style="display: flex; gap: 10px; justify-content: space-between;">
-                        <div style="flex: 1; text-align: center; padding: 12px; border-radius: 12px; background: {c1d}15; border: 1px solid {c1d}44;">
-                            <small style="color: #94a3b8; font-weight: bold;">1D</small><br>
-                            <b style="color: {c1d}; font-size: 1.1em;">{t1d}</b>
+                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 20px;">🔍 Institutional Trend Pulse</h3>
+                    <div style="display: flex; gap: 12px; justify-content: space-between;">
+                        <div style="flex: 1; text-align: center; padding: 15px; border-radius: 8px; background: #0f172a; border: 2px solid {c1d};">
+                            <small style="color: #cbd5f5; font-weight: 800;">DAILY</small><br>
+                            <b style="color: {c1d}; font-size: 1.22em; font-weight: 900;">{t1d.upper()}</b>
                         </div>
-                        <div style="flex: 1; text-align: center; padding: 12px; border-radius: 12px; background: {c1w}15; border: 1px solid {c1w}44;">
-                            <small style="color: #94a3b8; font-weight: bold;">1W</small><br>
-                            <b style="color: {c1w}; font-size: 1.1em;">{t1w}</b>
+                        <div style="flex: 1; text-align: center; padding: 15px; border-radius: 8px; background: #0f172a; border: 2px solid {c1w};">
+                            <small style="color: #cbd5f5; font-weight: 800;">WEEKLY</small><br>
+                            <b style="color: {c1w}; font-size: 1.22em; font-weight: 900;">{t1w.upper()}</b>
                         </div>
-                        <div style="flex: 1; text-align: center; padding: 12px; border-radius: 12px; background: {c1m}15; border: 1px solid {c1m}44;">
-                            <small style="color: #94a3b8; font-weight: bold;">1M</small><br>
-                            <b style="color: {c1m}; font-size: 1.1em;">{t1m}</b>
+                        <div style="flex: 1; text-align: center; padding: 15px; border-radius: 8px; background: #0f172a; border: 2px solid {c1m};">
+                            <small style="color: #cbd5f5; font-weight: 800;">MONTHLY</small><br>
+                            <b style="color: {c1m}; font-size: 1.22em; font-weight: 900;">{t1m.upper()}</b>
                         </div>
                     </div>
                 </div>
                 <div class="fintech-card">
-                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 12px;">🧠 Explainable AI Insight</h3>
-                    <p style="color: #cbd5f5 !important;">Factors influencing current {n_days}-day forecast for {ticker}:</p>
+                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 12px;">🧠 AI Predictive Rationalization</h3>
+                    <p style="color: #cbd5f5 !important; font-size: 1em;">Drivers for the current {n_days}-day institutional forecast for <b>{ticker}</b>:</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -392,11 +454,13 @@ with tab_dashboard:
                 else:
                     st.info("AI Explanation engine initializing...")
 
-                # 5. News Sentiment Card
+                # 5. Elite News Feed
                 st.markdown(f"""
                 <div class="fintech-card">
-                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 12px;">📰 Elite News Feed</h3>
-                    <p style="color: #cbd5f5 !important;"><b>Outlook:</b> <span style="color: {'#00ffcc' if sentiment['label'] == 'Positive' else '#ff4b4b' if sentiment['label'] == 'Negative' else '#f1c40f'}; font-weight: bold;">{sentiment['label']}</span></p>
+                    <h3 style="color: #ffffff; font-size: 1.1em; margin-bottom: 12px;">📰 Institutional News Intelligence</h3>
+                    <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+                        <p style="margin: 0;"><b>OUTLOOK:</b> <span style="color: {'#22c55e' if sentiment['label'] == 'Positive' else '#ef4444' if sentiment['label'] == 'Negative' else '#facc15'}; font-weight: 800;">{sentiment['label'].upper()}</span></p>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -493,15 +557,15 @@ with tab_prediction:
                     st.subheader("Asset Risk Profile")
                     risk_m = get_risk_assessment_metrics(p_df)
                     st.markdown(f"""
-                    <div class="fintech-card">
-                        <small style="color: #888;">SHARPE RATIO</small>
-                        <h2 style='color: #00ffcc;'>{risk_m['sharpe_ratio']:.2f}</h2>
-                        <small>Risk-Adjusted Return</small>
+                    <div class="fintech-card" style="border-right: 4px solid #22c55e;">
+                        <small style="color: #cbd5f5; font-weight: 800;">SHARPE RATIO</small>
+                        <h2 style='color: #22c55e; margin: 5px 0;'>{risk_m['sharpe_ratio']:.2f}</h2>
+                        <small style="color: #cbd5f5;">Risk-Adjusted Performance</small>
                     </div>
-                    <div class="fintech-card">
-                        <small style="color: #888;">MAX DRAWDOWN</small>
-                        <h2 style='color: #ff4b4b;'>{risk_m['max_drawdown']:.2%}</h2>
-                        <small>Peak-to-Trough Loss</small>
+                    <div class="fintech-card" style="border-right: 4px solid #ef4444;">
+                        <small style="color: #cbd5f5; font-weight: 800;">MAX DRAWDOWN</small>
+                        <h2 style='color: #ef4444; margin: 5px 0;'>{risk_m['max_drawdown']:.2%}</h2>
+                        <small style="color: #cbd5f5;">Peak-to-Trough Volatility</small>
                     </div>
                     """, unsafe_allow_html=True)
                     from utils.evaluator import compare_models
@@ -554,16 +618,12 @@ with tab_portfolio:
     if st.session_state.portfolio:
         df_port, summary = calculate_portfolio_performance(st.session_state.portfolio)
         
-        # AI Advisor Integration
-        advisor = analyze_portfolio(st.session_state.portfolio)
-        
-        adv_color = '#00ffcc' if advisor['status'] == 'Optimized' else '#f1c40f' if 'Balanced' in advisor['status'] else '#ff4b4b'
-        sc1.metric("Market Value", f"${summary['total_current_value']:,.2f}")
-        sc2.metric("Unrealized P/L", f"${summary['total_pl']:,.2f}", f"{summary['total_pl_pct']:.2f}%")
+        # Advisor Status
+        adv_color = '#22c55e' if advisor['status'] == 'Optimized' else '#facc15' if 'Balanced' in advisor['status'] else '#ef4444'
         st.markdown(f"""
-        <div class="fintech-card" style="text-align: center; border-left: 4px solid {adv_color};">
-            <small style="color: #94a3b8;">ADVISOR STATUS</small><br>
-            <h2 style="color: {adv_color}; margin: 0;">{advisor['status']}</h2>
+        <div class="fintech-card" style="text-align: center; border: 2px solid {adv_color}; background: #0f172a;">
+            <small style="color: #cbd5f5; font-weight: 800;">AI ADVISOR STATUS</small><br>
+            <h1 style="color: {adv_color}; margin: 10px 0; font-size: 2.2em; font-weight: 900;">{advisor['status'].upper()}</h1>
         </div>
         """, unsafe_allow_html=True)
         
