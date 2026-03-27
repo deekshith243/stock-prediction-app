@@ -320,8 +320,11 @@ with tab_dashboard:
             start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
             end_date = datetime.now().strftime('%Y-%m-%d')
             df = get_cached_data(ticker, start_date, end_date)
-            if not df.empty:
-                st.plotly_chart(plot_candlestick(df, ticker), use_container_width=True)
+            if df is not None and not df.empty:
+                try:
+                    st.plotly_chart(plot_candlestick(df, ticker), use_container_width=True)
+                except Exception as e:
+                    st.error(f"Chart Error: {e}")
                 
                 with st.expander("⚖️ Multi-Asset Comparison"):
                     comp_ticker = st.text_input("Comparison Ticker", value="MSFT").upper()
@@ -591,12 +594,14 @@ with tab_strategy:
             sc3.metric("Total Trades", bt_results['total_trades'])
             sc4.metric("Ending Capital", f"${bt_results['final_capital']:,.2f}")
             
-            st.markdown("---")
             # Equity Curve Chart
-            df_bt = pd.DataFrame({"Equity": bt_results['equity_curve']}, index=s_df.index)
-            fig_bt = px.line(df_bt, y="Equity", title=f"Equity Growth Simulation: {s_ticker}", template="plotly_dark")
-            fig_bt.update_traces(line_color="cyan", line_width=3)
-            st.plotly_chart(fig_bt, use_container_width=True)
+            try:
+                df_bt = pd.DataFrame({"Equity": bt_results.get('equity_curve', [10000])}, index=s_df.index)
+                fig_bt = px.line(df_bt, y="Equity", title=f"Equity Growth Simulation: {s_ticker}", template="plotly_dark")
+                fig_bt.update_traces(line_color="cyan", line_width=3)
+                st.plotly_chart(fig_bt, use_container_width=True)
+            except Exception as e:
+                st.error(f"Strategy Chart Error: {e}")
         else:
             st.warning("Enter a valid ticker for backtesting.")
 
@@ -618,22 +623,33 @@ with tab_portfolio:
     if st.session_state.portfolio:
         df_port, summary = calculate_portfolio_performance(st.session_state.portfolio)
         
-        # Advisor Status
-        adv_color = '#22c55e' if advisor['status'] == 'Optimized' else '#facc15' if 'Balanced' in advisor['status'] else '#ef4444'
-        st.markdown(f"""
-        <div class="fintech-card" style="text-align: center; border: 2px solid {adv_color}; background: #0f172a;">
-            <small style="color: #cbd5f5; font-weight: 800;">AI ADVISOR STATUS</small><br>
-            <h1 style="color: {adv_color}; margin: 10px 0; font-size: 2.2em; font-weight: 900;">{advisor['status'].upper()}</h1>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Portfolio AI Advisor Alerts
-        if advisor['warnings']:
-            with st.expander("🤖 AI Portfolio Advisor Alert", expanded=True):
-                for warn in advisor['warnings']:
-                    st.warning(warn)
-                for sug in advisor['suggestions']:
-                    st.info(f"💡 Suggestion: {sug}")
+        # Portfolio AI Advisor Integration
+        try:
+            advisor = analyze_portfolio(st.session_state.portfolio)
+            status = advisor.get("status", "").lower()
+            if status == "optimized":
+                adv_color = "#22c55e"
+            elif status == "balanced":
+                adv_color = "#facc15"
+            else:
+                adv_color = "#ef4444"
+                
+            st.markdown(f"""
+            <div class="fintech-card" style="text-align: center; border: 2px solid {adv_color}; background: #0f172a;">
+                <small style="color: #cbd5f5; font-weight: 800;">AI ADVISOR STATUS</small><br>
+                <h1 style="color: {adv_color}; margin: 10px 0; font-size: 2.2em; font-weight: 900;">{advisor.get('status', 'N/A').upper()}</h1>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Portfolio AI Advisor Alerts
+            if advisor.get('warnings'):
+                with st.expander("🤖 AI Portfolio Advisor Alert", expanded=True):
+                    for warn in advisor.get('warnings', []):
+                        st.warning(warn)
+                    for sug in advisor.get('suggestions', []):
+                        st.info(f"💡 Suggestion: {sug}")
+        except Exception as e:
+            st.error(f"AI Advisor Module Error: {e}")
         
         st.markdown("---")
         col_t, col_p = st.columns([3, 2])
@@ -649,7 +665,10 @@ with tab_portfolio:
                 st.caption("No trade activity recorded yet.")
         with col_p:
             st.subheader("Asset Allocation")
-            st.plotly_chart(plot_allocation_chart(df_port), use_container_width=True)
+            try:
+                st.plotly_chart(plot_allocation_chart(df_port), use_container_width=True)
+            except Exception as e:
+                st.error(f"Allocation Chart Error: {e}")
     else:
         st.info("Your portfolio is currently empty.")
 
