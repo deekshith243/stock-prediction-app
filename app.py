@@ -90,7 +90,7 @@ def get_cached_data(ticker, start, end):
         return pd.DataFrame()
 
 @st.cache_resource
-def get_ml_results(df, seq_length):
+def get_ml_results(df, seq_length, n_days=7):
     try:
         data_scaled, scaler = scale_features(df[['Close']].values)
         X, y = create_sequences(data_scaled, seq_length)
@@ -98,14 +98,14 @@ def get_ml_results(df, seq_length):
         
         # Train RandomForest (Lightweight Alternative to LSTM)
         rf_preds, rf_model = train_rf_model(X_train, y_train, X_test)
-        rf_forecast = forecast_future_rf(rf_model, X_test[-1], days=7)
+        rf_forecast = forecast_future_rf(rf_model, X_test[-1], days=n_days)
         
         # Train LR
         lr_preds, lr_model = train_linear_regression(X_train, y_train, X_test)
-        lr_forecast = forecast_future_lr(lr_model, X_test[-1], days=7)
+        lr_forecast = forecast_future_lr(lr_model, X_test[-1], days=n_days)
         
         # ARIMA (Statsmodels)
-        arima_forecast, _ = train_arima(df['Close'].values, forecast_days=7)
+        arima_forecast, _ = train_arima(df['Close'].values, forecast_days=n_days)
         
         return {
             "y_test": y_test,
@@ -182,13 +182,14 @@ with tab_home:
 with tab_predict:
     st.title("Predictive Intelligence")
     ticker = st.text_input("Select Ticker for AI Forecast", value="AAPL", key="forecast_ticker").upper()
+    n_days = st.number_input("Enter number of days to predict", min_value=1, max_value=30, value=7)
     
-    with st.spinner("Generating AI Projections..."):
+    with st.spinner(f"Generating AI Projections for {n_days} days..."):
         start_date = (datetime.now() - timedelta(days=730)).strftime('%Y-%m-%d')
         end_date = datetime.now().strftime('%Y-%m-%d')
         df = get_cached_data(ticker, start_date, end_date)
         if not df.empty:
-            results = get_ml_results(df, 60) # Default seq_length
+            results = get_ml_results(df, 60, n_days=n_days) 
             if not results.get('success', True):
                  st.stop()
                  
@@ -198,8 +199,8 @@ with tab_predict:
             col_chart, col_metrics = st.columns([3, 1])
             
             with col_chart:
-                st.subheader("7-Day Price Trajectory")
-                days_range = [f"Day {i+1}" for i in range(7)]
+                st.subheader(f"{n_days}-Day Price Trajectory")
+                days_range = [f"Day {i+1}" for i in range(n_days)]
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(x=days_range, y=inv(results['rf_forecast']), name="RandomForest (ML)", line=dict(color='cyan', width=4)))
                 fig.add_trace(go.Scatter(x=days_range, y=results['arima_forecast'], name="ARIMA (Statistical)", line=dict(color='magenta', dash='dash')))
