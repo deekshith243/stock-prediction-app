@@ -312,11 +312,11 @@ with tab_analysis:
             interpretations = get_indicator_interpretation(df_ind)
             
             ic1, ic2, ic3 = st.columns(3)
-            ic1.info(f"**RSI**: {interpretations['RSI']}")
-            ic2.info(f"**MACD**: {interpretations['MACD']}")
-            ic3.info(f"**Bollinger**: {interpretations['BB']}")
+            ic1.info(f"**RSI**: {interpretations.get('RSI', 'N/A')}")
+            ic2.info(f"**MACD**: {interpretations.get('MACD', 'N/A')}")
+            ic3.info(f"**Bollinger**: {interpretations.get('BB', 'N/A')}")
             
-            st.success(f"**Overall Trend**: {interpretations['Trend']}")
+            st.success(f"**Overall Trend**: {interpretations.get('Trend', 'Trend data unavailable')}")
             
         with col_an2:
             st.subheader("Historical Snapshot")

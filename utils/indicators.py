@@ -63,6 +63,7 @@ def get_indicator_interpretation(df: pd.DataFrame):
     # 1-Day: Price vs MA5 (Short-term)
     ma5 = df['Close'].rolling(window=5).mean().iloc[-1]
     interpretations['Trend_1D'] = "Uptrend" if price > ma5 else "Downtrend"
+    interpretations['Trend'] = interpretations['Trend_1D'] # Compatibility fix
     
     # 1-Week: Price vs MA20 (Mid-term)
     ma20 = df['Close'].rolling(window=20).mean().iloc[-1]
