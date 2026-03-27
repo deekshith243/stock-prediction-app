@@ -15,23 +15,19 @@ def backtest_strategy(df: pd.DataFrame, initial_capital: float = 10000.0) -> dic
     wins = 0
     equity_curve = [initial_capital]
     
-    # Simple strategy: 
-    # Buy if RSI < 35 and MACD > MACD_Signal
-    # Sell if RSI > 65 or MACD < MACD_Signal
-    
-    for i in range(1, len(df)):
-        row = df.iloc[i]
-        prev_row = df.iloc[i-1]
+        # RELAXED strategy for demonstration: 
+        # Buy if RSI < 45 OR MACD > Signal
+        # Sell if RSI > 55 OR MACD < Signal
         
         # BUY signal
-        if position == 0 and row['RSI'] < 35 and row['MACD'] > row['MACD_Signal']:
+        if position == 0 and (row['RSI'] < 45 or row['MACD'] > row['MACD_Signal']):
             position = capital / row['Close']
             capital = 0
             buy_price = row['Close']
             trades += 1
             
         # SELL signal
-        elif position > 0 and (row['RSI'] > 65 or row['MACD'] < row['MACD_Signal']):
+        elif position > 0 and (row['RSI'] > 55 or row['MACD'] < row['MACD_Signal']):
             capital = position * row['Close']
             if row['Close'] > buy_price:
                 wins += 1
