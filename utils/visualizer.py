@@ -59,22 +59,22 @@ def plot_forecast_with_confidence(days_range, forecast, lower_bound, upper_bound
 def plot_moving_averages(df: pd.DataFrame, ticker: str):
     """
     Plots the closing price along with moving averages (50, 200).
-    
-    Args:
-        df (pd.DataFrame): Dataframe with 'Close' column.
-        ticker (str): The stock ticker symbol.
     """
     df_copy = df.copy()
-    df_copy['MA50'] = df_copy['Close'].rolling(window=50).mean()
-    df_copy['MA200'] = df_copy['Close'].rolling(window=200).mean()
+    if 'MA50' not in df_copy.columns:
+        df_copy['MA50'] = df_copy['Close'].rolling(window=50).mean()
+    if 'MA200' not in df_copy.columns:
+        df_copy['MA200'] = df_copy['Close'].rolling(window=200).mean()
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_copy.index, y=df_copy['Close'], name="Close", line=dict(color='white', width=1.5)))
-    fig.add_trace(go.Scatter(x=df_copy.index, y=df_copy['MA50'], name="50-day MA", line=dict(color='yellow', width=1.5)))
-    fig.add_trace(go.Scatter(x=df_copy.index, y=df_copy['MA200'], name="200-day MA", line=dict(color='blue', width=1.5)))
+    fig.add_trace(go.Scatter(x=df_copy.index, y=df_copy['Close'], name="Close", line=dict(color='rgba(255, 255, 255, 0.8)', width=2)))
+    fig.add_trace(go.Scatter(x=df_copy.index, y=df_copy['MA50'], name="50-day MA", line=dict(color='#f1c40f', width=1.5, dash='dash')))
+    fig.add_trace(go.Scatter(x=df_copy.index, y=df_copy['MA200'], name="200-day MA", line=dict(color='#3498db', width=1.5, dash='dot')))
     
-    fig.update_layout(title=f"{ticker} Closing Price & MAs",
-                      yaxis_title="Price",
+    fig.update_layout(title=f"{ticker} Institutional Trend Analysis (MAs)",
+                      yaxis_title="Price ($)",
                       xaxis_title="Date",
-                      template="plotly_dark")
+                      template="plotly_dark",
+                      hovermode="x unified",
+                      legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
     return fig

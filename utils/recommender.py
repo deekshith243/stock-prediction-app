@@ -61,26 +61,23 @@ def get_recommendation(last_price, next_day_pred, rsi, sentiment, macd=0, macd_s
         signals.append("Negative Market Sentiment")
 
     # Final logic
-    if score >= 3:
-        recommendation = "STRONG BUY"
-        color = "green"
-    elif score >= 1:
+    if score >= 2:
         recommendation = "BUY"
-        color = "#90ee90" # Light Green
-    elif score <= -3:
-        recommendation = "STRONG SELL"
-        color = "red"
-    elif score <= -1:
+        color = "#00ffcc" # Greenish Cyan
+        explanation = "Technical indicators and forecast suggest an upward trend."
+    elif score <= -2:
         recommendation = "SELL"
-        color = "#f08080" # Light Red
+        color = "#ff4b4b" # Red
+        explanation = "Technical indicators and forecast suggest a downward trend."
     else:
         recommendation = "HOLD"
-        color = "yellow"
+        color = "#f1c40f" # Yellow/Gold
+        explanation = "Market signals are neutral or conflicting."
 
     return {
         "action": recommendation,
         "color": color,
         "score": score,
         "signals": signals,
-        "explanation": f"Strategical {recommendation} based on technical analysis."
+        "explanation": explanation
     }

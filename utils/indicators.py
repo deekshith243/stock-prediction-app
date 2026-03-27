@@ -31,6 +31,11 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df['RSI'] = calculate_rsi(df)
     df['MACD'], df['MACD_Signal'] = calculate_macd(df)
     df['BB_Middle'], df['BB_Upper'], df['BB_Lower'] = calculate_bollinger_bands(df)
+    
+    # Add Moving Averages
+    df['MA50'] = df['Close'].rolling(window=50).mean()
+    df['MA200'] = df['Close'].rolling(window=200).mean()
+    
     return df
 
 def get_indicator_interpretation(df: pd.DataFrame):
@@ -53,5 +58,14 @@ def get_indicator_interpretation(df: pd.DataFrame):
     if price > latest['BB_Upper']: interpretations['BB'] = "Above Upper Band (Overextended)"
     elif price < latest['BB_Lower']: interpretations['BB'] = "Below Lower Band (Undervalued)"
     else: interpretations['BB'] = "Within Range"
+
+    # Moving Averages Trend
+    if not np.isnan(latest['MA50']) and not np.isnan(latest['MA200']):
+        if latest['MA50'] > latest['MA200']:
+            interpretations['Trend'] = "Golden Cross (Bullish Long-term)"
+        else:
+            interpretations['Trend'] = "Death Cross (Bearish Long-term)"
+    else:
+        interpretations['Trend'] = "Insufficient data for MA Cross"
 
     return interpretations
