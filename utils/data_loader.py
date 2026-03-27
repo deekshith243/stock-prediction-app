@@ -3,66 +3,47 @@ import pandas as pd
 import os
 import time
 
-def fetch_stock_data(ticker: str, start_date: str, end_date: str, save_path: str = "data", retries: int = 3) -> pd.DataFrame:
+def fetch_stock_data(ticker: str, start_date: str, end_date: str, save_path: str = "data", retries: int = 2) -> pd.DataFrame:
     """
-    Fetches historical stock data using yf.download() with retry logic for reliability.
+    Fetches historical stock data with robust crypto support and fallbacks.
     """
     ticker = ticker.strip().upper()
     if not ticker:
         return pd.DataFrame()
 
-    for attempt in range(retries):
+    def try_fetch(t, s, e, method="download"):
         try:
-            print(f"Fetching {ticker} (Attempt {attempt + 1})...")
-            # Cloud-optimized yf.download call
-            df = yf.download(
-                ticker, 
-                start=start_date, 
-                end=end_date, 
-                progress=False, 
-                timeout=20, 
-                auto_adjust=True, 
-                threads=False
-            )
+            if method == "download":
+                df = yf.download(t, start=s, end=e, progress=False, timeout=15, auto_adjust=True)
+            else:
+                # Fallback for crypto/unstable tickers
+                ticker_obj = yf.Ticker(t)
+                df = ticker_obj.history(period="7d", interval="1d")
             
-            # Handle MultiIndex columns (common in yfinance 0.2.x)
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(0)
-            
-            # Log Data Shape for Debugging
             if df is not None and not df.empty:
-                print(f"Successfully fetched {ticker}. Shape: {df.shape}")
-                
-                # Ensure 'Close' column exists
-                if 'Close' not in df.columns:
-                    print(f"Warning: 'Close' column missing for {ticker}. Available: {df.columns.tolist()}")
-                    # Sometimes 'Adj Close' is returned if auto_adjust is false, but we set it true.
-                    # Fallback to last column if 'Close' is missing but data exists
-                    if len(df.columns) > 0:
-                        df['Close'] = df.iloc[:, 0] 
-
-                # Ensure directory exists
-                os.makedirs(save_path, exist_ok=True)
-                file_name = f"{ticker}_data.csv"
-                df.to_csv(os.path.join(save_path, file_name))
-                return df
-                
-            print(f"Data for {ticker} is empty on attempt {attempt + 1}.")
-            
-            # If specifically the date range fails, try a broader period on last attempt
-            if attempt == retries - 1:
-                print(f"Final fallback: Fetching 1y period for {ticker}...")
-                df = yf.download(ticker, period="1y", interval="1d", progress=False, timeout=20, auto_adjust=True, threads=False)
                 if isinstance(df.columns, pd.MultiIndex):
                     df.columns = df.columns.get_level_values(0)
-                if not df.empty:
-                    return df
+                if 'Close' not in df.columns and len(df.columns) > 0:
+                    df['Close'] = df.iloc[:, 0]
+                return df
+            return pd.DataFrame()
+        except:
+            return pd.DataFrame()
 
-        except Exception as e:
-            print(f"Error on attempt {attempt + 1} for {ticker}: {e}")
+    for attempt in range(retries + 1):
+        # 1. Primary Method (Download)
+        df = try_fetch(ticker, start_date, end_date, method="download")
+        
+        # 2. Secondary Method (History fallback for crypto)
+        if df.empty and ("-USD" in ticker or "Crypto" in ticker):
+            df = try_fetch(ticker, start_date, end_date, method="history")
             
-        if attempt < retries - 1:
-            time.sleep(2) # Wait before retry
+        if not df.empty:
+            os.makedirs(save_path, exist_ok=True)
+            df.to_csv(os.path.join(save_path, f"{ticker}_data.csv"))
+            return df
+            
+        if attempt < retries:
+            time.sleep(1.5) # Small delay between retries
                 
-    print(f"Critical: Ticker '{ticker}' failed after {retries} attempts.")
     return pd.DataFrame()

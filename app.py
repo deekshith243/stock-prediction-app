@@ -139,10 +139,9 @@ with st.sidebar:
                 elif not w_df.empty:
                     w_col2.markdown(f"**${w_df['Close'].iloc[-1]:.2f}**")
                 else:
-                    w_col2.write("<small>No Data</small>", unsafe_allow_html=True)
+                    w_col2.write("<small style='color: #888;'>Data unavailable</small>", unsafe_allow_html=True)
             except Exception as e:
-                print(f"Watchlist error for {w_ticker}: {e}")
-                w_col2.write("<small>Service Error</small>", unsafe_allow_html=True)
+                w_col2.write("<small style='color: #888;'>Data unavailable</small>", unsafe_allow_html=True)
                 
             if w_col3.button("🗑️", key=f"del_{w_ticker}"):
                 st.session_state.watchlist.remove(w_ticker)
