@@ -26,25 +26,41 @@ def plot_candlestick(df: pd.DataFrame, ticker: str):
                       xaxis_rangeslider_visible=False)
     return fig
 
-def plot_forecast_with_confidence(days_range, forecast, lower_bound, upper_bound, model_name="ARIMA"):
+def plot_forecast_with_confidence(days_range, forecast, lower_bound, upper_bound, historical_x=None, historical_y=None, model_name="Ensemble AI"):
     """
-    Plots forecast with shaded confidence bands.
+    Plots forecast with optionally including historical context for alignment.
     """
     fig = go.Figure()
     
-    # Shaded Confidence Interval
+    # 1. Historical Data (if provided)
+    if historical_x is not None and historical_y is not None:
+        fig.add_trace(go.Scatter(
+            x=historical_x, y=historical_y,
+            name="Actual Close",
+            line=dict(color='rgba(255, 255, 255, 0.5)', width=2)
+        ))
+        # Bridge the last historical point to the first forecast point
+        bridge_x = [historical_x[-1], days_range[0]]
+        bridge_y = [historical_y[-1], forecast[0]]
+        fig.add_trace(go.Scatter(
+            x=bridge_x, y=bridge_y,
+            showlegend=False,
+            line=dict(color='cyan', width=4, dash='dot'),
+            hoverinfo="skip"
+        ))
+
+    # 2. Shaded Confidence Interval
     fig.add_trace(go.Scatter(
         x=days_range + days_range[::-1],
         y=list(upper_bound) + list(lower_bound)[::-1],
         fill='toself',
-        fillcolor='rgba(0, 255, 255, 0.2)',
+        fillcolor='rgba(0, 255, 255, 0.15)',
         line=dict(color='rgba(255,255,255,0)'),
         hoverinfo="skip",
-        showlegend=True,
-        name=f"95% Confidence Band"
+        name="95% Confidence Band"
     ))
     
-    # Forecast Line
+    # 3. Forecast Line
     fig.add_trace(go.Scatter(
         x=days_range, y=forecast,
         name=f"{model_name} Forecast",
@@ -53,7 +69,8 @@ def plot_forecast_with_confidence(days_range, forecast, lower_bound, upper_bound
     
     fig.update_layout(title=f"{model_name} Predictive Trajectory",
                       template="plotly_dark", height=450,
-                      xaxis_title="Future Horizon", yaxis_title="Price")
+                      xaxis_title="Horizon", yaxis_title="Price ($)",
+                      hovermode="x unified")
     return fig
 
 def plot_moving_averages(df: pd.DataFrame, ticker: str):

@@ -317,21 +317,30 @@ with tab_prediction:
                 
                 with col_chart:
                     st.subheader(f"{n_days}-Day Confidence-Aware Forecast")
-                    days_range = [f"Day {i+1}" for i in range(n_days)]
-                    conf_int = results['arima_conf_int']
                     
+                    # Create actual future dates for x-axis
+                    last_date = p_df.index[-1]
+                    future_dates = [last_date + timedelta(days=i+1) for i in range(n_days)]
+                    
+                    conf_int = results['arima_conf_int']
+                    # Ensure conf_int is handled as a numpy array for indexing
+                    if isinstance(conf_int, pd.DataFrame):
+                        conf_int = conf_int.values
+                        
                     fig = plot_forecast_with_confidence(
-                        days_range, inv(results['rf_forecast']), 
-                        inv(conf_int[:, 0]), inv(conf_int[:, 1]), 
+                        future_dates, inv(results['rf_forecast']), 
+                        conf_int[:, 0], conf_int[:, 1], 
+                        historical_x=p_df.index[-15:], 
+                        historical_y=p_df['Close'].iloc[-15:],
                         model_name="Ensemble AI"
                     )
                     st.plotly_chart(fig, use_container_width=True)
                     
                     forecast_df = pd.DataFrame({
-                        "Horizon": days_range, 
+                        "Date": future_dates, 
                         "Predicted_Price": inv(results['rf_forecast']),
-                        "Lower_Bound": inv(conf_int[:, 0]),
-                        "Upper_Bound": inv(conf_int[:, 1])
+                        "Lower_Bound": conf_int[:, 0],
+                        "Upper_Bound": conf_int[:, 1]
                     })
                     st.download_button("📥 Download Forecast CSV", data=forecast_df.to_csv(index=False), file_name=f"{p_ticker}_forecast.csv", mime="text/csv")
 
